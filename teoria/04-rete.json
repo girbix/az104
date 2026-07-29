@@ -78,5 +78,29 @@
  "esempio": "Metti un private endpoint sullo storage e disabiliti l'accesso pubblico. Ora `stcontoso.blob.core.windows.net` risolve a `10.0.1.4` dall'interno, e da internet non è più raggiungibile in nessun modo.",
  "esame": "Service endpoint = il traffico resta sulla rete Azure ma il servizio tiene l'IP pubblico. Private endpoint = il servizio prende un **IP privato tuo**. Se la domanda nomina on-premises o una DNS zone `privatelink.*`, è private endpoint.",
  "learn": "https://learn.microsoft.com/it-it/azure/private-link/private-endpoint-overview"
+},
+{
+ "obiettivo": "Configure Azure DNS",
+ "titolo": "Azure DNS",
+ "concetto": "Due mondi distinti:\n\n- **zona pubblica** — ospita il dominio su internet. Per delegarla davvero devi cambiare i **name server** presso il registrar\n- **zona privata** — risolve nomi dentro le VNet che le colleghi, invisibile da fuori\n\nUna zona privata funziona solo per le VNet collegate con un **virtual network link**; per registrare i nomi delle VM da sola serve la **registrazione automatica**.",
+ "esempio": "Crei la zona pubblica `contoso.com` in Azure e i record ci sono tutti, ma da internet non risolve niente. Manca il passaggio esterno: presso il registrar i name server puntano ancora altrove.",
+ "esame": "Una zona privata senza **virtual network link** non risolve nulla, per quanto i record siano corretti. È l'errore più frequente sulle zone private.",
+ "learn": "https://learn.microsoft.com/it-it/azure/dns/dns-overview"
+},
+{
+ "obiettivo": "Configure an internal or public load balancer",
+ "titolo": "Load balancer",
+ "concetto": "Un **load balancer** lavora al livello 4 (TCP/UDP) e ha quattro pezzi:\n\n- **frontend IP** — dove arriva il traffico, pubblico o privato\n- **backend pool** — le VM che lo ricevono\n- **health probe** — decide chi è sano\n- **rule** — lega frontend, pool e probe su una porta\n\nSKU **Basic** e **Standard**: lo Standard supporta le zone, ha uno SLA, ed è **chiuso per impostazione predefinita**.",
+ "esempio": "Public load balancer davanti a due web server: frontend con IP pubblico, pool con le due VM, probe TCP sulla 80, regola che porta la 80 in ingresso alla 80 del pool. Se una VM cade, la probe la esclude e il traffico va tutto all'altra.",
+ "esame": "Un load balancer non fa **niente al livello 7**: se la domanda parla di percorsi URL, cookie o offload TLS, la risposta è **Application Gateway**, non il load balancer.",
+ "learn": "https://learn.microsoft.com/it-it/azure/load-balancer/load-balancer-overview"
+},
+{
+ "obiettivo": "Troubleshoot load balancing",
+ "titolo": "Diagnosticare il bilanciamento",
+ "concetto": "Quando il traffico non arriva, il colpevole è quasi sempre la **health probe**. Le probe partono dall'indirizzo fisso **168.63.129.16** e viaggiano con il service tag **AzureLoadBalancer**: se un NSG non lo consente sulla porta della probe, ogni istanza risulta non integra e il load balancer trattiene tutto.",
+ "esempio": "Tre VM sane, applicazione avviata su tutte, e zero traffico consegnato. L'NSG non ammette `AzureLoadBalancer` sulla porta della probe: tutte le probe falliscono, tutte le istanze risultano giù.",
+ "esame": "Una probe **HTTP considera integro solo il 200**: un 201 o un redirect 302 la fanno fallire. E le VM dietro uno Standard Load Balancer **non hanno accesso a internet in uscita** per impostazione predefinita — il Basic ce l'aveva, ed è il cambiamento che sorprende chi migra.",
+ "learn": "https://learn.microsoft.com/it-it/azure/load-balancer/load-balancer-troubleshoot-health-probe-status"
 }
 ]
