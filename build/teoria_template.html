@@ -1,0 +1,271 @@
+<title>Studia AZ-104 — teoria in italiano</title>
+
+<style>
+:root{
+  --paper:#EEF1F2; --card:#FFFFFF; --card-2:#F7F9F9;
+  --line:#D3DBDE; --line-2:#E4EAEC;
+  --text:#101A22; --text-2:#4A5A63; --text-3:#71838C;
+  --accent:#0F7C91; --accent-2:#0B5F70; --accent-soft:#DCEEF1;
+  --signal:#C77F1A; --signal-soft:#FBF0DC;
+  --good:#2E7D5B; --good-soft:#DDEFE6;
+  --shadow:0 1px 2px rgba(16,26,34,.06),0 4px 16px rgba(16,26,34,.06);
+  --font-ui:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif;
+  --font-dis:"Segoe UI Variable Display","Segoe UI Semibold","Segoe UI",system-ui,sans-serif;
+  --font-mono:"Cascadia Mono",Consolas,"SF Mono",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root{
+  --paper:#0B1319; --card:#141F27; --card-2:#101A21;
+  --line:#2B3A45; --line-2:#22303A;
+  --text:#E6EDEF; --text-2:#A3B4BD; --text-3:#7C8F99;
+  --accent:#3AA8BE; --accent-2:#5FC2D6; --accent-soft:#15323A;
+  --signal:#E0A244; --signal-soft:#33280F;
+  --good:#4CAF83; --good-soft:#122C22;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 18px rgba(0,0,0,.3);
+}}
+:root[data-theme="dark"]{
+  --paper:#0B1319; --card:#141F27; --card-2:#101A21;
+  --line:#2B3A45; --line-2:#22303A;
+  --text:#E6EDEF; --text-2:#A3B4BD; --text-3:#7C8F99;
+  --accent:#3AA8BE; --accent-2:#5FC2D6; --accent-soft:#15323A;
+  --signal:#E0A244; --signal-soft:#33280F;
+  --good:#4CAF83; --good-soft:#122C22;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 18px rgba(0,0,0,.3);
+}
+:root[data-theme="light"]{
+  --paper:#EEF1F2; --card:#FFFFFF; --card-2:#F7F9F9;
+  --line:#D3DBDE; --line-2:#E4EAEC;
+  --text:#101A22; --text-2:#4A5A63; --text-3:#71838C;
+  --accent:#0F7C91; --accent-2:#0B5F70; --accent-soft:#DCEEF1;
+  --signal:#C77F1A; --signal-soft:#FBF0DC;
+  --good:#2E7D5B; --good-soft:#DDEFE6;
+  --shadow:0 1px 2px rgba(16,26,34,.06),0 4px 16px rgba(16,26,34,.06);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--text);font-family:var(--font-ui);
+  font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;
+  -webkit-text-size-adjust:100%;text-size-adjust:100%}
+h1,h2,h3{font-family:var(--font-dis);margin:0;font-weight:600;letter-spacing:-.01em;text-wrap:balance}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+a{color:var(--accent-2)}
+
+/* ---------- barra ---------- */
+.top{position:sticky;top:0;z-index:40;background:var(--card);border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:14px;padding:0 16px;height:54px}
+.brand{display:flex;align-items:baseline;gap:8px;font-family:var(--font-dis);font-weight:600;
+  font-size:15px;white-space:nowrap}
+.brand span{font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--accent);
+  border:1px solid var(--accent);border-radius:3px;padding:1px 5px}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.btn{background:var(--card);border:1px solid var(--line);border-radius:7px;padding:6px 11px;
+  cursor:pointer;font-size:13px;font-weight:500;color:var(--text-2)}
+.btn:hover{border-color:var(--accent);color:var(--accent-2)}
+.cerca{background:var(--card-2);border:1px solid var(--line);border-radius:7px;padding:6px 10px;
+  font-size:13.5px;width:210px;max-width:38vw}
+
+/* ---------- impianto ---------- */
+.wrap{display:grid;grid-template-columns:250px minmax(0,1fr);gap:26px;
+  max-width:1180px;margin:0 auto;padding:20px 16px 70px;align-items:start}
+.rail{position:sticky;top:70px;max-height:calc(100vh - 92px);overflow-y:auto}
+.dom-h{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);
+  font-weight:600;margin:14px 0 5px;padding:0 4px}
+.dom-h:first-child{margin-top:0}
+.nav-l{display:block;width:100%;text-align:left;background:none;border:0;cursor:pointer;
+  padding:5px 8px;border-radius:6px;font-size:13px;color:var(--text-2);line-height:1.35}
+.nav-l:hover{background:var(--card);color:var(--text)}
+.nav-l.on{background:var(--accent-soft);color:var(--accent-2);font-weight:600}
+.nav-l.fatta::before{content:"✓ ";color:var(--good);font-weight:700}
+
+/* ---------- lezione ---------- */
+.intro{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;
+  margin-bottom:18px;box-shadow:var(--shadow)}
+.intro h1{font-size:21px;margin-bottom:7px}
+.intro p{margin:0;color:var(--text-2);font-size:14px;max-width:66ch}
+.lez{background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:16px;
+  box-shadow:var(--shadow);overflow:hidden;scroll-margin-top:66px}
+.lez-h{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:12px 20px;
+  border-bottom:1px solid var(--line-2);background:var(--card-2)}
+.lez-h h2{font-size:16.5px;flex:1;min-width:0}
+.num{font-family:var(--font-mono);font-size:11.5px;font-weight:700;color:var(--accent-2)}
+.obj{font-size:11px;color:var(--text-3);width:100%;font-family:var(--font-mono);line-height:1.4}
+.lez-b{padding:16px 20px}
+.sez{margin-bottom:15px}
+.sez:last-child{margin-bottom:0}
+.sez h3{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);
+  margin-bottom:6px}
+.sez p{margin:0 0 9px;max-width:70ch;line-height:1.62}
+.sez p:last-child{margin-bottom:0}
+.sez ul{margin:0 0 9px;padding-left:20px;max-width:70ch}
+.sez li{margin-bottom:3px;line-height:1.55}
+.sez code{font-family:var(--font-mono);font-size:.88em;background:var(--card-2);
+  border:1px solid var(--line-2);border-radius:4px;padding:1px 5px}
+.sez pre{margin:0 0 9px;padding:11px 13px;background:var(--card-2);border:1px solid var(--line-2);
+  border-radius:7px;overflow-x:auto;font-family:var(--font-mono);font-size:12.5px;line-height:1.5}
+.sez strong{font-weight:600;color:var(--text)}
+.es{background:var(--card-2);border-left:3px solid var(--accent);border-radius:0 7px 7px 0;
+  padding:12px 15px}
+.es h3{color:var(--accent-2)}
+.tr{background:var(--signal-soft);border-left:3px solid var(--signal);border-radius:0 7px 7px 0;
+  padding:12px 15px}
+.tr h3{color:var(--signal)}
+.lez-f{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:11px 20px;
+  border-top:1px solid var(--line-2);background:var(--card-2)}
+.lez-f a{font-size:12.5px;text-decoration:none;border-bottom:1px solid transparent}
+.lez-f a:hover{border-bottom-color:var(--accent-2)}
+.segna{margin-left:auto}
+.segna.on{background:var(--good-soft);border-color:var(--good);color:var(--good);font-weight:600}
+.vuoto{text-align:center;padding:50px 20px;color:var(--text-3)}
+
+@media (max-width:900px){
+  .wrap{grid-template-columns:1fr;gap:16px;padding:14px}
+  .rail{position:static;max-height:none;border-bottom:1px solid var(--line);padding-bottom:12px}
+  .cerca{width:150px}
+  .brand{font-size:13px}
+}
+</style>
+
+<header class="top">
+  <div class="brand">Studia <span>AZ-104</span></div>
+  <div class="top-right">
+    <input class="cerca" id="cerca" type="search" placeholder="Cerca nella teoria…" aria-label="Cerca">
+    <button class="btn" id="tema" type="button">Tema</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <aside class="rail" id="rail"></aside>
+  <main id="main"></main>
+</div>
+
+<script>
+"use strict";
+const LEZIONI = /*__DATI__*/[];
+
+const DOM_IT = {
+  1:"Identità e governance", 2:"Storage", 3:"Compute",
+  4:"Rete virtuale", 5:"Monitoraggio e manutenzione"
+};
+
+/* progressi: solo quali lezioni hai segnato come studiate, in locale */
+const K = "az104:teoria";
+let fatte = {};
+try { fatte = JSON.parse(localStorage.getItem(K) || "{}"); } catch(e){ fatte = {}; }
+const salva = () => { try { localStorage.setItem(K, JSON.stringify(fatte)); } catch(e){} };
+
+const esc = s => String(s == null ? "" : s)
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
+/* Il testo delle lezioni usa un markdown minimo: **grassetto**, `codice`,
+   blocchi ```, elenchi con "- ", e righe vuote come separatore di paragrafo.
+   Si passa sempre da esc(), quindi il markup non puo' iniettare HTML. */
+function rendi(t){
+  const blocchi = String(t || "").split(/\n\n+/);
+  return blocchi.map(b => {
+    b = b.trim();
+    if(!b) return "";
+    if(b.startsWith("```")){
+      return "<pre>" + esc(b.replace(/^```\w*\n?/, "").replace(/```$/, "").trim()) + "</pre>";
+    }
+    const righe = b.split("\n");
+    if(righe.every(r => r.trim().startsWith("- "))){
+      return "<ul>" + righe.map(r => "<li>" + inline(r.trim().slice(2)) + "</li>").join("") + "</ul>";
+    }
+    return "<p>" + righe.map(inline).join("<br>") + "</p>";
+  }).join("");
+}
+function inline(s){
+  return esc(s)
+    .replace(/`([^`]+)`/g, (m,g) => "<code>" + g + "</code>")
+    .replace(/\*\*([^*]+)\*\*/g, (m,g) => "<strong>" + g + "</strong>");
+}
+
+let filtro = "";
+function visibili(){
+  if(!filtro) return LEZIONI;
+  const q = filtro.toLowerCase();
+  return LEZIONI.filter(l =>
+    (l.t + " " + l.o + " " + l.c + " " + l.es + " " + l.tr).toLowerCase().includes(q));
+}
+
+function disegna(){
+  const lista = visibili();
+  const rail = document.getElementById("rail");
+  const main = document.getElementById("main");
+
+  /* indice a sinistra, raggruppato per dominio */
+  let html = "", domCorrente = null;
+  lista.forEach((l, i) => {
+    if(l.d !== domCorrente){
+      domCorrente = l.d;
+      html += '<div class="dom-h">' + esc(DOM_IT[l.d]) + "</div>";
+    }
+    html += '<button class="nav-l' + (fatte[l.o] ? " fatta" : "") + '" data-i="' + i + '">' +
+            esc(l.t) + "</button>";
+  });
+  rail.innerHTML = html || '<p class="vuoto">Nessun risultato.</p>';
+  rail.querySelectorAll(".nav-l").forEach(b => {
+    b.onclick = () => {
+      const el = document.getElementById("lez-" + b.dataset.i);
+      if(el) el.scrollIntoView({ behavior:"smooth", block:"start" });
+    };
+  });
+
+  /* lezioni */
+  const n = Object.keys(fatte).length;
+  let out = '<div class="intro"><h1>La teoria, in italiano</h1>' +
+    "<p>Una lezione per ognuno degli <strong>82 obiettivi</strong> della study guide ufficiale: " +
+    "il concetto in due righe, un esempio concreto, e la trappola che l'esame ci costruisce sopra. " +
+    "Sono gli stessi obiettivi con cui il simulatore ti dice cosa ripassare, quindi da lì arrivi " +
+    "dritto alla lezione giusta. <strong>" + n + " di " + LEZIONI.length +
+    "</strong> segnate come studiate.</p></div>";
+
+  if(!lista.length){
+    out += '<div class="lez"><p class="vuoto">Nessuna lezione contiene «' + esc(filtro) + '».</p></div>';
+  }
+  lista.forEach((l, i) => {
+    out += '<article class="lez" id="lez-' + i + '">' +
+      '<div class="lez-h"><span class="num">' + String(i + 1).padStart(2, "0") + "</span>" +
+        "<h2>" + esc(l.t) + "</h2>" +
+        '<div class="obj">' + esc(l.o) + "</div></div>" +
+      '<div class="lez-b">' +
+        '<div class="sez"><h3>Concetto</h3>' + rendi(l.c) + "</div>" +
+        '<div class="sez es"><h3>Esempio</h3>' + rendi(l.es) + "</div>" +
+        '<div class="sez tr"><h3>All\'esame</h3>' + rendi(l.tr) + "</div>" +
+      "</div>" +
+      '<div class="lez-f">' +
+        '<a href="' + esc(l.u) + '" target="_blank" rel="noopener noreferrer">↗ Approfondisci su Microsoft Learn</a>' +
+        '<button class="btn segna' + (fatte[l.o] ? " on" : "") + '" data-o="' + esc(l.o) + '">' +
+          (fatte[l.o] ? "✓ Studiata" : "Segna studiata") + "</button>" +
+      "</div></article>";
+  });
+  main.innerHTML = out;
+
+  main.querySelectorAll(".segna").forEach(b => {
+    b.onclick = () => {
+      const o = b.dataset.o;
+      if(fatte[o]) delete fatte[o]; else fatte[o] = 1;
+      salva(); disegna();
+    };
+  });
+}
+
+document.getElementById("cerca").addEventListener("input", e => {
+  filtro = e.target.value.trim();
+  disegna();
+});
+document.getElementById("tema").onclick = () => {
+  const cur = document.documentElement.getAttribute("data-theme");
+  const sysDark = matchMedia("(prefers-color-scheme: dark)").matches;
+  const ora = cur || (sysDark ? "dark" : "light");
+  const nuovo = ora === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", nuovo);
+  try { localStorage.setItem("az104:tema", nuovo); } catch(e){}
+};
+try {
+  const t = localStorage.getItem("az104:tema");
+  if(t) document.documentElement.setAttribute("data-theme", t);
+} catch(e){}
+
+disegna();
+</script>
