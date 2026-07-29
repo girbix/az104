@@ -78,5 +78,61 @@
  "esempio": "Devi far combaciare un container con una cartella locale, cancellati compresi:\n\n`azcopy sync 'C:\\dati' 'https://…/mycontainer' --recursive --delete-destination=true`\n\nCon `copy` i file cancellati in locale resterebbero come blob per sempre.",
  "esame": "Se la domanda dice «i blob che in locale non ci sono più devono sparire», è **sync con --delete-destination**. Se dice solo «carica», è copy.",
  "learn": "https://learn.microsoft.com/it-it/azure/storage/common/storage-use-azcopy-v10"
+},
+{
+ "obiettivo": "Create and configure a file share in Azure Files",
+ "titolo": "File share",
+ "concetto": "Una **file share** è una condivisione di rete gestita, raggiungibile via **SMB** (Windows, Linux, macOS) o **NFS** (solo su account premium).\n\nDue modelli di fatturazione: **pay-as-you-go** sugli account standard, dove paghi quello che usi, e **provisioned** sui premium, dove decidi tu la dimensione e con essa compri le prestazioni.",
+ "esempio": "Sostituisci un vecchio file server. Crei una share da 500 GiB, la monti con `net use Z: \\\\account.file.core.windows.net\\share` e la agganci al dominio per usare le credenziali aziendali invece della chiave.",
+ "esame": "La porta **445** è il collo di bottiglia più frequente: molti provider la bloccano in uscita e la share sembra irraggiungibile. Le share NFS richiedono account premium e non supportano l'autenticazione a identità.",
+ "learn": "https://learn.microsoft.com/it-it/azure/storage/files/storage-how-to-create-file-share"
+},
+{
+ "obiettivo": "Create and configure a container in Azure Blob Storage",
+ "titolo": "Container di blob",
+ "concetto": "Un **container** raggruppa i blob, come una cartella di primo livello. Il nome deve essere **minuscolo**, da 3 a 63 caratteri, senza due trattini di fila.\n\nIl livello di accesso pubblico ha tre valori: **Private** (niente anonimi), **Blob** (leggono i singoli blob ma non l'elenco), **Container** (leggono anche l'elenco).",
+ "esempio": "Vuoi che le immagini prodotto siano leggibili via URL ma che nessuno possa elencare il container: livello **Blob**. Prima però devi accendere *Allow Blob anonymous access* sull'account, che sui nuovi account nasce spento.",
+ "esame": "Container speciali che ricorrono nelle domande: **$web** per il sito statico, **$root** per i blob senza nome di container, **$logs** per i log di servizio.",
+ "learn": "https://learn.microsoft.com/it-it/azure/storage/blobs/anonymous-read-access-configure"
+},
+{
+ "obiettivo": "Configure storage tiers",
+ "titolo": "Livelli di accesso",
+ "concetto": "Il **tier** bilancia il costo di tenere i dati contro quello di leggerli:\n\n- **Hot** — archiviazione cara, accesso economico\n- **Cool** — meno caro tenere, più caro leggere (minimo 30 giorni)\n- **Cold** — ancora più freddo (minimo 90 giorni)\n- **Archive** — costo minimo, ma **offline** (minimo 180 giorni)",
+ "esempio": "Sposti in Archive i backup di tre anni fa. Sei mesi dopo ne serve uno: non lo puoi leggere così com'è. Devi **reidratarlo** portandolo a Hot o Cool, e ci vogliono ore — fino a 15 con priorità standard.",
+ "esame": "**Archive è offline**: le letture falliscono finché la reidratazione non finisce, resta disponibile solo il metadato. E se togli un blob dal tier prima del minimo di giorni, paghi comunque la penale di eliminazione anticipata.",
+ "learn": "https://learn.microsoft.com/it-it/azure/storage/blobs/access-tiers-overview"
+},
+{
+ "obiettivo": "Configure soft delete for blobs and containers",
+ "titolo": "Soft delete",
+ "concetto": "Il **soft delete** è il cestino: quello che elimini resta recuperabile per i giorni che imposti. Esiste su due livelli, **blob** e **container**, e vanno accesi separatamente.",
+ "esempio": "Qualcuno cancella un container per sbaglio. Con il soft delete dei container lo ripristini e tornano dentro anche i blob che conteneva — ma solo se nel frattempo nessuno ha creato un container con lo stesso nome, perché il ripristino usa il nome originale.",
+ "esame": "Il soft delete dei blob **non** ti fa recuperare i singoli blob dentro un container eliminato: in quel caso l'unità di ripristino è il container. Le due funzionalità sono complementari, non ridondanti.",
+ "learn": "https://learn.microsoft.com/it-it/azure/storage/blobs/soft-delete-blob-overview"
+},
+{
+ "obiettivo": "Configure snapshots and soft delete for Azure Files",
+ "titolo": "Snapshot e soft delete per Azure Files",
+ "concetto": "Uno **snapshot di share** è una copia di sola lettura a un istante preciso, ed è incrementale: paghi solo ciò che è cambiato. Su Windows gli utenti li vedono come *Versioni precedenti* e si recuperano i file da soli.\n\nIl **soft delete** delle share protegge invece dall'eliminazione della share intera.",
+ "esempio": "Programmi uno snapshot notturno. Un utente rovina un documento martedì: clic destro → Versioni precedenti → ripristina quello di lunedì. Nessun ticket, nessun amministratore coinvolto.",
+ "esame": "Uno snapshot **non è un backup**: vive nello stesso storage account della share. Se elimini la share, gli snapshot se ne vanno con lei — a meno che non ci sia il soft delete a trattenerla.",
+ "learn": "https://learn.microsoft.com/it-it/azure/storage/files/storage-snapshots-files"
+},
+{
+ "obiettivo": "Configure blob lifecycle management",
+ "titolo": "Lifecycle management",
+ "concetto": "Una **lifecycle policy** è una regola in JSON che sposta o elimina i blob in base a quanto tempo è passato: dopo N giorni li porti a Cool, dopo M ad Archive, dopo X li elimini. Le regole si filtrano per prefisso o per tag.",
+ "esempio": "Regola su `logs/`: Cool dopo 30 giorni, Archive dopo 90, eliminazione dopo 365. Da quel momento la pulizia si fa da sola e la spesa si ferma da sola.",
+ "esame": "Il motore gira **una volta al giorno**, e dopo aver creato o modificato una policy possono servire **fino a 48 ore** perché agisca. Se non è successo niente dopo qualche ora, non è rotta: aspetta.",
+ "learn": "https://learn.microsoft.com/it-it/azure/storage/blobs/lifecycle-management-overview"
+},
+{
+ "obiettivo": "Configure blob versioning",
+ "titolo": "Versioning dei blob",
+ "concetto": "Con il **versioning** ogni scrittura crea una nuova versione: quella nuova diventa corrente, la precedente resta conservata. Ti salva dalle sovrascritture sbagliate, non solo dalle eliminazioni.",
+ "esempio": "Un deployment sbagliato sovrascrive il file di configurazione. Apri il blob, guardi le versioni, promuovi quella di ieri: risolto in trenta secondi.",
+ "esame": "Eliminare un blob rimuove **solo la versione corrente**: le precedenti restano e continuano a costare. Un account con versioning e nessuna lifecycle policy cresce senza limite. E il **point-in-time restore** vuole tre cose insieme: versioning, change feed e soft delete.",
+ "learn": "https://learn.microsoft.com/it-it/azure/storage/blobs/versioning-overview"
 }
 ]
