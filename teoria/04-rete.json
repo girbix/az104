@@ -1,0 +1,42 @@
+[
+{
+ "obiettivo": "Create and configure virtual networks and subnets",
+ "titolo": "Virtual network e subnet",
+ "concetto": "Una **VNet** è la tua rete privata in Azure: le dai uno spazio di indirizzi CIDR e la dividi in **subnet**. Vive in una region e in una subscription.\n\nIl dettaglio che cambia i conti: Azure **riserva 5 indirizzi** in ogni subnet — il primo (network), tre per gateway e servizi di piattaforma, e l'ultimo (broadcast).",
+ "esempio": "Una subnet `/24` sembra offrire 254 indirizzi utilizzabili. In Azure ne offre **251**. Se ti servono esattamente 254 host, la `/24` non basta.",
+ "esame": "Il calcolo «quanti host stanno in questa subnet» ricorre di continuo, e la risposta è sempre 5 in meno di quanto diresti. Una subnet non si può ridurre se contiene già risorse.",
+ "learn": "https://learn.microsoft.com/it-it/azure/virtual-network/virtual-networks-overview"
+},
+{
+ "obiettivo": "Create and configure virtual network peering",
+ "titolo": "Peering fra VNet",
+ "concetto": "Il **peering** collega due VNet in modo che le risorse si parlino con indirizzi privati, sulla rete di Azure. Fra region diverse si chiama **global peering** e funziona uguale.\n\nLa proprietà che genera più errori: il peering **non è transitivo**.",
+ "esempio": "vnet-a è in peering con vnet-b, e vnet-b con vnet-c. Le VM di vnet-a **non** raggiungono vnet-c: il traffico non attraversa la rete di mezzo. O peeri direttamente a e c, o metti un'appliance in b che instrada.",
+ "esame": "Gli spazi di indirizzi **non devono sovrapporsi**, altrimenti il peering non si crea nemmeno. E *Allow forwarded traffic* non rende il peering transitivo: serve quando c'è un'appliance che inoltra.",
+ "learn": "https://learn.microsoft.com/it-it/azure/virtual-network/virtual-network-peering-overview"
+},
+{
+ "obiettivo": "Configure public IP addresses",
+ "titolo": "Indirizzi IP pubblici",
+ "concetto": "Un **IP pubblico** può essere **Basic** o **Standard**, e **Dynamic** o **Static**.\n\nLo Standard è sempre static, è **chiuso per impostazione predefinita** (senza NSG che consente, non entra niente) e supporta le zone di disponibilità. Il Basic è in via di ritiro.",
+ "esempio": "Assegni un IP pubblico dinamico a una VM e ci punti un record DNS. Deallochi la VM per il fine settimana, la riaccendi, e l'indirizzo è cambiato: il record punta nel vuoto. Con **Static** l'indirizzo resta tuo finché non lo elimini.",
+ "esame": "Un IP **dinamico cambia** a ogni deallocazione. Se la domanda parla di DNS, firewall di terzi o whitelist, la risposta è Static.",
+ "learn": "https://learn.microsoft.com/it-it/azure/virtual-network/ip-services/public-ip-addresses"
+},
+{
+ "obiettivo": "Configure user-defined routes",
+ "titolo": "User-defined route",
+ "concetto": "Azure crea da solo le route di sistema. Una **UDR** le scavalca per mandare il traffico dove vuoi tu — tipicamente dentro un firewall.\n\nQuando più route hanno lo stesso prefisso, vince in quest'ordine:\n\n**UDR → BGP → route di sistema**\n\nPrima però conta sempre il **prefisso più lungo**.",
+ "esempio": "Vuoi che tutto il traffico verso internet passi dal firewall. Crei una UDR `0.0.0.0/0` con next hop *Virtual appliance* e l'IP privato del firewall, e la associ alla subnet.",
+ "esame": "L'istinto da networking dice «il dinamico batte lo statico». In Azure è **rovesciato**: la UDR, cioè la scelta amministrativa esplicita, batte il BGP.",
+ "learn": "https://learn.microsoft.com/it-it/azure/virtual-network/virtual-networks-udr-overview"
+},
+{
+ "obiettivo": "Troubleshoot network connectivity",
+ "titolo": "Diagnosticare la connettività",
+ "concetto": "**Network Watcher** è la cassetta degli attrezzi, e ogni strumento risponde a una domanda diversa:\n\n- **IP flow verify** — questo pacchetto passa? e quale regola decide?\n- **Next hop** — dove finisce il traffico verso questo indirizzo?\n- **Effective routes** — quali route vede davvero questa NIC?\n- **Connection troubleshoot** — una prova singola, adesso\n- **Connection monitor** — sorveglianza continua, con avvisi",
+ "esempio": "Una VM non raggiunge un server. IP flow verify dice *allowed*, quindi non è un NSG. Next hop mostra *Virtual appliance*: c'è una UDR che manda il traffico a un firewall che lo sta scartando. In due passaggi hai isolato il punto.",
+ "esame": "Prova **singola** = Connection troubleshoot. Sorveglianza **nel tempo** con avvisi = Connection monitor. È la coppia che l'esame scambia più spesso.",
+ "learn": "https://learn.microsoft.com/it-it/azure/network-watcher/network-watcher-overview"
+}
+]
