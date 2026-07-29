@@ -38,5 +38,45 @@
  "esempio": "Vuoi che il reparto Marketing monti la share e che dentro solo i responsabili scrivano in `\\Budget`. Al gruppo Marketing dai il ruolo *SMB Share Contributor*; sulla cartella Budget metti una ACL NTFS che lascia scrivere ai soli responsabili.",
  "esame": "Azure RBAC **non** si può applicare dentro la share: il permesso su una singola cartella è sempre una ACL NTFS. E l'autenticazione a identità vale per **SMB**, non per NFS.",
  "learn": "https://learn.microsoft.com/it-it/azure/storage/files/storage-files-active-directory-overview"
+},
+{
+ "obiettivo": "Create and configure storage accounts",
+ "titolo": "Storage account",
+ "concetto": "Lo **storage account** è il contenitore di primo livello e offre quattro servizi dati: **Blob** (file non strutturati), **File** (share SMB/NFS), **Queue** (messaggi), **Table** (chiave-valore).\n\nAlla creazione scegli cose che poi **non** si cambiano più: il tipo di account, il livello di prestazioni (Standard o Premium) e l'**hierarchical namespace**, cioè l'interruttore che lo trasforma in Data Lake Gen2.",
+ "esempio": "Ti serve storage per un data lake analitico: crei un account **general-purpose v2** e nella scheda Advanced accendi *Hierarchical namespace*. Se te ne dimentichi, non c'è un'impostazione da spuntare dopo: serve un percorso di upgrade separato e a senso unico.",
+ "esame": "I managed disk **non** stanno in uno storage account visibile: sono una risorsa a sé. È un distrattore ricorrente nella domanda «quali servizi contiene uno storage account».",
+ "learn": "https://learn.microsoft.com/it-it/azure/storage/common/storage-account-overview"
+},
+{
+ "obiettivo": "Configure Azure Storage redundancy",
+ "titolo": "Ridondanza",
+ "concetto": "La ridondanza dice **quante copie** dei tuoi dati esistono e **dove**:\n\n- **LRS** — 3 copie, un solo datacenter\n- **ZRS** — 3 copie, in 3 zone di disponibilità diverse\n- **GRS** — 3 copie qui + 3 in una region secondaria\n- **GZRS** — ZRS qui + 3 copie nella region secondaria\n\nLe varianti **RA-** (RA-GRS, RA-GZRS) aggiungono la lettura dalla copia secondaria.",
+ "esempio": "Sei su LRS e vuoi arrivare a GZRS. Non si fa in un passaggio: devi passare per due conversioni, per esempio LRS → GRS e poi GRS → GZRS, oppure LRS → ZRS e poi ZRS → GZRS.",
+ "esame": "Da LRS a GZRS **non** esiste la conversione diretta. E senza la variante RA-, la copia secondaria c'è ma non la puoi leggere: è lì per il disastro, non per distribuire il carico.",
+ "learn": "https://learn.microsoft.com/it-it/azure/storage/common/storage-redundancy"
+},
+{
+ "obiettivo": "Configure object replication",
+ "titolo": "Object replication",
+ "concetto": "L'**object replication** copia i block blob da un container di origine a uno di destinazione, anche in un altro account o in un'altra region. La copia è **asincrona**: succede poco dopo la scrittura, non nello stesso istante.\n\nRichiede **change feed** e **versioning** attivi sull'origine.",
+ "esempio": "Il sito produce immagini in West Europe e i lettori sono negli Stati Uniti. Con l'object replication le copi in un account in East US e li servi da lì, riducendo la latenza senza cambiare l'applicazione che scrive.",
+ "esame": "Non confonderla con la ridondanza: GRS copia **tutto l'account** in modo opaco e a fini di disaster recovery; l'object replication copia **container scelti** e la destinazione è leggibile e scrivibile.",
+ "learn": "https://learn.microsoft.com/it-it/azure/storage/blobs/object-replication-overview"
+},
+{
+ "obiettivo": "Configure storage account encryption",
+ "titolo": "Cifratura dello storage",
+ "concetto": "Tutto ciò che sta in uno storage account è **sempre cifrato a riposo**: non si può spegnere. La sola scelta è chi tiene la chiave:\n\n- **chiavi gestite da Microsoft** — predefinito, non fai nulla\n- **chiavi gestite dal cliente (CMK)** — in un Key Vault tuo, ruoti tu\n\nCon CMK servono *soft delete* e *purge protection* sul vault, e un'identità che possa leggere la chiave.",
+ "esempio": "La conformità impone che la chiave sia sotto il tuo controllo. Metti la chiave in Key Vault, dai allo storage account una managed identity con permesso di lettura sulla chiave, e la colleghi. Il giorno che revochi la chiave, i dati diventano illeggibili — anche per te.",
+ "esame": "Non esiste uno storage account non cifrato. Se una domanda chiede «come abiliti la cifratura a riposo», la premessa è falsa: è già attiva, e la vera domanda riguarda **chi possiede la chiave**.",
+ "learn": "https://learn.microsoft.com/it-it/azure/storage/common/storage-service-encryption"
+},
+{
+ "obiettivo": "Manage data by using Azure Storage Explorer and AzCopy",
+ "titolo": "Storage Explorer e AzCopy",
+ "concetto": "**Storage Explorer** è l'interfaccia grafica per sfogliare e spostare dati. **AzCopy** è lo strumento da riga di comando, quello che usi quando i file sono tanti.\n\nDue comandi che non fanno la stessa cosa:\n\n- `azcopy copy` — **aggiunge**, non elimina mai nulla\n- `azcopy sync` — rende la destinazione **identica** all'origine",
+ "esempio": "Devi far combaciare un container con una cartella locale, cancellati compresi:\n\n`azcopy sync 'C:\\dati' 'https://…/mycontainer' --recursive --delete-destination=true`\n\nCon `copy` i file cancellati in locale resterebbero come blob per sempre.",
+ "esame": "Se la domanda dice «i blob che in locale non ci sono più devono sparire», è **sync con --delete-destination**. Se dice solo «carica», è copy.",
+ "learn": "https://learn.microsoft.com/it-it/azure/storage/common/storage-use-azcopy-v10"
 }
 ]
