@@ -94,5 +94,37 @@
  "esempio": "Regola: se la CPU media supera il 70% per 10 minuti, aggiungi un'istanza; se scende sotto il 30%, toglila. Il picco del lunedì mattina si assorbe da solo e la notte si paga il minimo.",
  "esame": "La **modalità di orchestrazione si decide alla creazione e non si cambia più**. Ricorre come distrattore in ogni domanda sugli scale set.",
  "learn": "https://learn.microsoft.com/it-it/azure/virtual-machine-scale-sets/overview"
+},
+{
+ "obiettivo": "Create and manage an Azure Container Registry",
+ "titolo": "Azure Container Registry",
+ "concetto": "L'**ACR** è il magazzino privato delle tue immagini container. Tre tier: **Basic**, **Standard**, **Premium** — e la differenza non è solo lo spazio.\n\nSolo **Premium** ha private link, geo-replica e content trust.\n\nL'accesso passa da Entra ID (`az acr login`) o da un **token con scope map** per gli automatismi.",
+ "esempio": "Ti serve un registry raggiungibile solo dalla rete interna, con private endpoint. Basic e Standard non lo offrono: devi essere in **Premium**. È una scelta di tier, non un'impostazione da accendere.",
+ "esame": "Private link, geo-replica e content trust = **Premium**. L'admin user è disabilitato per impostazione predefinita e serve solo come ripiego: la via giusta è Entra ID o un token.",
+ "learn": "https://learn.microsoft.com/it-it/azure/container-registry/container-registry-skus"
+},
+{
+ "obiettivo": "Provision a container by using Azure Container Instances",
+ "titolo": "Azure Container Instances",
+ "concetto": "**ACI** esegue un container senza che tu gestisca nessuna VM: gli dai un'immagine e parte in secondi. Un **container group** raccoglie più container che condividono ciclo di vita, rete e volumi.\n\nLa **restart policy** decide cosa succede quando il processo termina: `Always`, `OnFailure`, `Never`.",
+ "esempio": "Un lavoro notturno di elaborazione: lo lanci in ACI con restart policy `Never`. Gira, finisce, e smetti di pagare. Nessuna VM accesa a vuoto per un'ora di lavoro.",
+ "esame": "ACI è per carichi **semplici e isolati**: niente autoscaling, niente bilanciamento. Se la domanda parla di scalare in base al traffico o alla coda, la risposta è Container Apps, non ACI.",
+ "learn": "https://learn.microsoft.com/it-it/azure/container-instances/container-instances-overview"
+},
+{
+ "obiettivo": "Provision a container by using Azure Container Apps",
+ "titolo": "Azure Container Apps",
+ "concetto": "**Container Apps** sta un gradino sopra ACI: gestisce **revisioni**, ingress, traffico ripartito fra versioni, e scala da solo. La scalabilità è guidata da **KEDA**, che sa reagire a HTTP, code, eventi.\n\nPuò **scalare a zero**: con zero repliche, sul piano Consumption non paghi.",
+ "esempio": "Un worker legge messaggi da una coda Service Bus. Regola di scala personalizzata su Service Bus, repliche minime **0**: la notte la coda è vuota, il worker si spegne, il costo va a zero. All'arrivo dei messaggi riparte.",
+ "esame": "«Costo zero quando non c'è lavoro» → **repliche minime a 0** su Container Apps. Con minimo 1 una replica resta accesa e continui a pagare. Una regola HTTP non serve a un worker che ascolta una coda.",
+ "learn": "https://learn.microsoft.com/it-it/azure/container-apps/scale-app"
+},
+{
+ "obiettivo": "Manage sizing and scaling for containers, including Azure Container Instances and Azure Container Apps",
+ "titolo": "Dimensionare e scalare i container",
+ "concetto": "In **ACI** dichiari CPU e memoria per container, e la somma del gruppo deve stare nei limiti della region. Non c'è scalabilità automatica: se serve più capacità, ne avvii un altro.\n\nIn **Container Apps** dichiari CPU e memoria per replica, e poi **min/max repliche** più le regole di scala.",
+ "esempio": "Stessa applicazione, due mondi. In ACI: 2 vCPU e 4 GB, fisso, e paghi finché gira. In Container Apps: 0,5 vCPU per replica, da 0 a 10 repliche, e la spesa segue il traffico.",
+ "esame": "ACI si dimensiona, Container Apps si dimensiona **e** si scala. Se la domanda contiene «automaticamente» o «in base al carico», ACI è escluso in partenza.",
+ "learn": "https://learn.microsoft.com/it-it/azure/container-instances/container-instances-region-availability"
 }
 ]
