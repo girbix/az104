@@ -1,0 +1,50 @@
+[
+{
+ "obiettivo": "Interpret metrics in Azure Monitor",
+ "titolo": "Metriche",
+ "concetto": "Le **metriche** sono numeri campionati a intervalli regolari: leggere, quasi in tempo reale, conservate **93 giorni**. Rispondono alla domanda «quanto».\n\nOgni metrica ha un'**aggregazione** — media, minimo, massimo, somma, conteggio — e leggere quella sbagliata porta a conclusioni sbagliate.",
+ "esempio": "La CPU media di una VM è al 40% e sembra tutto tranquillo. Guardi il **massimo** e scopri picchi al 100% ogni pochi minuti: la media li stava nascondendo.",
+ "esame": "Metriche = numeri, 93 giorni, quasi istantanee. **Log** = record strutturati interrogabili in KQL, con la conservazione che decidi tu. Se la domanda parla di storico lungo o di query, sono i log.",
+ "learn": "https://learn.microsoft.com/it-it/azure/azure-monitor/essentials/data-platform-metrics"
+},
+{
+ "obiettivo": "Configure log settings in Azure Monitor",
+ "titolo": "Impostazioni dei log",
+ "concetto": "Le risorse non mandano i loro log da nessuna parte finché non glielo dici. Il **diagnostic setting** è l'interruttore: sceglie quali categorie inviare e verso dove.\n\nQuattro destinazioni, con scopi diversi:\n\n- **Log Analytics workspace** — per interrogarli in KQL\n- **Storage account** — per archiviarli a lungo e a poco\n- **Event Hub** — per portarli fuori, verso un SIEM\n- **Partner solution**",
+ "esempio": "Vuoi indagare gli accessi a uno storage account con delle query. Diagnostic setting sull'account, categoria `StorageRead`, destinazione un workspace di Log Analytics. Da lì in avanti li interroghi; **prima** di quel momento non esistono.",
+ "esame": "Se la domanda chiede di **interrogare** con KQL, di costruire workbook o di creare log alert, la destinazione è il **Log Analytics workspace** — è l'unica delle quattro che lo permette.",
+ "learn": "https://learn.microsoft.com/it-it/azure/azure-monitor/essentials/diagnostic-settings"
+},
+{
+ "obiettivo": "Query and analyze logs in Azure Monitor",
+ "titolo": "Query KQL",
+ "concetto": "I log si interrogano in **KQL**. La struttura è sempre la stessa: parti da una tabella e concateni operatori con la pipe.\n\nQuelli che ricorrono: `where` filtra, `project` sceglie le colonne, `summarize` aggrega, `order by` ordina, `take` limita.",
+ "esempio": "```\nHeartbeat\n| where TimeGenerated > ago(1h)\n| summarize count() by Computer\n| order by count_ desc\n```\nQuante volte ogni macchina ha dato segno di vita nell'ultima ora, dalla più attiva.",
+ "esame": "`ago(1h)` è il modo idiomatico di dire «ultima ora». E i log arrivano con qualche minuto di ritardo: per una reazione istantanea servono le metriche, non le query.",
+ "learn": "https://learn.microsoft.com/it-it/azure/azure-monitor/logs/log-query-overview"
+},
+{
+ "obiettivo": "Set up alert rules, action groups, and alert processing rules in Azure Monitor",
+ "titolo": "Avvisi e action group",
+ "concetto": "Un avviso si compone di due pezzi separati, ed è la separazione che confonde:\n\n- la **alert rule** dice *quando* scattare (soglia su metrica, risultato di una query, evento)\n- l'**action group** dice *cosa fare*: email, SMS, webhook, runbook\n\nLe **alert processing rule** applicano trasformazioni trasversali, come sopprimere gli avvisi durante una manutenzione programmata.",
+ "esempio": "Regola: CPU media sopra l'80% per 5 minuti. Action group: email al gruppo operativo e chiamata a un webhook. Senza l'action group l'avviso scatta lo stesso, ma **non lo riceve nessuno**.",
+ "esame": "«L'avviso si vede nel portale ma non arriva nessuna email» → manca l'**action group**, o non è collegato. Rilevamento e notifica sono due cose distinte.",
+ "learn": "https://learn.microsoft.com/it-it/azure/azure-monitor/alerts/alerts-overview"
+},
+{
+ "obiettivo": "Configure and interpret monitoring of virtual machines, storage accounts, and networks by using Azure Monitor Insights",
+ "titolo": "Insights",
+ "concetto": "Gli **Insights** sono viste già pronte sopra metriche e log, una per famiglia di risorse.\n\n**VM insights** aggiunge la funzionalità **Map**: scopre i processi in esecuzione e le connessioni TCP fra di essi, e le disegna. Installa da sé l'Azure Monitor Agent e il Dependency agent.\n\nCi sono anche **Storage insights** e **Network insights**.",
+ "esempio": "Devi capire con chi parla davvero un vecchio server prima di spostarlo. Accendi VM insights con processi e dipendenze: la mappa mostra le connessioni e scopri due dipendenze che nessuno aveva documentato.",
+ "esame": "Su Storage insights: se la **E2E latency** sale mentre la **server latency** resta piatta, il ritardo **non è di Azure Storage** — è il client o la rete. È la lettura che l'esame chiede.",
+ "learn": "https://learn.microsoft.com/it-it/azure/azure-monitor/vm/vminsights-overview"
+},
+{
+ "obiettivo": "Use Azure Network Watcher and Connection monitor",
+ "titolo": "Network Watcher e Connection monitor",
+ "concetto": "**Network Watcher** raccoglie gli strumenti di rete; il **Connection monitor** è quello che sorveglia nel tempo la raggiungibilità e la latenza fra due endpoint, con avvisi.\n\nI **NSG flow log** registrano invece quali flussi sono stati consentiti o negati, e alimentano Traffic Analytics.",
+ "esempio": "Vuoi sapere se il collegamento fra la filiale e l'applicazione peggiora nel corso della giornata. Connection monitor campiona in continuo e ti disegna la curva: il picco delle 14 lo vedi, invece di doverlo indovinare.",
+ "esame": "Network Watcher è **regionale** e viene abilitato per region. Prova singola = Connection troubleshoot; sorveglianza continua = **Connection monitor**.",
+ "learn": "https://learn.microsoft.com/it-it/azure/network-watcher/network-watcher-overview"
+}
+]
