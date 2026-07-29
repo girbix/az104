@@ -1,0 +1,42 @@
+[
+{
+ "obiettivo": "Interpret an Azure Resource Manager template or a Bicep file",
+ "titolo": "Leggere un template ARM o Bicep",
+ "concetto": "Un **template ARM** è un JSON che descrive *cosa vuoi ottenere*, non i passi per ottenerlo. Le sezioni che contano:\n\n- **parameters** — i valori che cambiano a ogni deployment\n- **variables** — valori calcolati una volta e riusati\n- **resources** — le risorse da creare\n- **outputs** — i valori restituiti a fine deployment\n\n**Bicep** è la stessa cosa scritta in modo leggibile: si compila in ARM, non è un motore diverso.",
+ "esempio": "In ARM scrivi `\"name\": \"[concat(parameters('prefisso'), '-vm')]\"`. In Bicep la stessa riga è `name: '${prefisso}-vm'`. Stesso risultato, ma la seconda si legge senza decifrarla.",
+ "esame": "`dependsOn` stabilisce **l'ordine**, non crea niente. E in Bicep quasi non serve: se una risorsa riferisce un'altra per simbolo, la dipendenza viene dedotta da sola.",
+ "learn": "https://learn.microsoft.com/it-it/azure/azure-resource-manager/templates/syntax"
+},
+{
+ "obiettivo": "Modify an existing Azure Resource Manager template",
+ "titolo": "Modificare un template ARM",
+ "concetto": "Le modifiche che ricorrono più spesso:\n\n- **allowedValues** — limita un parametro a un elenco chiuso\n- **defaultValue** — il valore usato se non lo passi\n- **copy** — crea N risorse senza duplicare il blocco\n- **condition** — decide se creare una risorsa o no",
+ "esempio": "Devi creare cinque storage account invece di uno. Non duplichi il blocco: aggiungi `\"copy\": { \"name\": \"loop\", \"count\": 5 }` e costruisci il nome con `copyIndex()`, che a ogni giro ti dà l'indice.",
+ "esame": "`copy` è il ciclo, `condition` è un interruttore acceso/spento. Non si sostituiscono. E `minValue`/`maxValue` esistono ma valgono **solo** per i parametri di tipo int.",
+ "learn": "https://learn.microsoft.com/it-it/azure/azure-resource-manager/templates/copy-resources"
+},
+{
+ "obiettivo": "Modify an existing Bicep file",
+ "titolo": "Modificare un file Bicep",
+ "concetto": "In Bicep le stesse idee hanno una sintassi più corta:\n\n- `@allowed([...])` — decoratore sul parametro\n- `param nome string = 'valore'` — parametro con predefinito\n- `for i in range(0, 5):` — ciclo\n- `if (condizione)` — creazione condizionale\n\nI **module** permettono di riusare pezzi di template come funzioni.",
+ "esempio": "```\n@allowed(['dev', 'test', 'prod'])\nparam ambiente string = 'dev'\n```\nDa qui in poi un deployment che passa `collaudo` fallisce la validazione prima ancora di creare qualcosa.",
+ "esame": "Bicep **non** è un servizio a parte: `az deployment` lo compila in ARM e manda quello. Tutto ciò che ARM non sa fare, non lo fa neanche Bicep.",
+ "learn": "https://learn.microsoft.com/it-it/azure/azure-resource-manager/bicep/file"
+},
+{
+ "obiettivo": "Deploy resources by using an Azure Resource Manager template or a Bicep file",
+ "titolo": "Distribuire un template",
+ "concetto": "Il deployment ha due **modalità**, ed è la distinzione più importante di tutto l'argomento:\n\n- **Incremental** (predefinita) — aggiunge e aggiorna quello che c'è nel template, **lascia stare** il resto\n- **Complete** — quello che non è nel template viene **eliminato**",
+ "esempio": "`New-AzResourceGroupDeployment -Mode Complete` con un template che descrive una sola VM, lanciato su un resource group che ne contiene tre: le altre due spariscono. È il comando che cancella la produzione per sbaglio.",
+ "esame": "Se `-Mode` non c'è, la modalità è **Incremental**. Complete va chiesta esplicitamente, e `what-if` è il modo di vedere cosa succederebbe prima di premere.",
+ "learn": "https://learn.microsoft.com/it-it/azure/azure-resource-manager/templates/deployment-modes"
+},
+{
+ "obiettivo": "Export a deployment as an Azure Resource Manager template or convert an Azure Resource Manager template to a Bicep file",
+ "titolo": "Esportare e convertire",
+ "concetto": "Da una risorsa esistente puoi **esportare** il template, per ripartire da lì invece che da un foglio bianco. Da un template ARM puoi passare a Bicep con `az bicep decompile`, e nella direzione opposta con `az bicep build`.",
+ "esempio": "Hai costruito un ambiente a mano nel portale e lo vuoi ricreare in collaudo. Resource group → *Export template*, poi `az bicep decompile` per ottenere un file leggibile su cui lavorare.",
+ "esame": "Il template esportato **non è pronto all'uso**: contiene valori fissi, id di risorse esistenti e a volte proprietà di sola lettura. È un punto di partenza, non un artefatto da rilanciare così com'è.",
+ "learn": "https://learn.microsoft.com/it-it/azure/azure-resource-manager/templates/export-template-portal"
+}
+]
