@@ -1,4 +1,4 @@
-# AZ-104 — ripasso, banca domande e simulatore
+# AZ-104 — teoria, banca domande e simulatore
 
 Materiale di studio per l'esame **AZ-104 (Microsoft Azure Administrator)**, allineato alle
 *skills measured* del **17 aprile 2026**. Funziona dal browser, da telefono e da PC.
@@ -7,6 +7,7 @@ Materiale di studio per l'esame **AZ-104 (Microsoft Azure Administrator)**, alli
 
 | | |
 |---|---|
+| **82 lezioni** di teoria | il concetto, un esempio, e la trappola dell'esame — una per obiettivo ufficiale |
 | **591 domande** d'esame | con risposta, spiegazione e link alla pagina Microsoft Learn che la prova |
 | **522 flashcard** | definizioni, limiti, comandi, differenze insidiose — tutti e cinque i domini |
 | **Simulatore** | 50 domande in 100 minuti, estrazione pesata per dominio, soglia 700/1000 |
@@ -38,6 +39,9 @@ inglese è stato tradotto fedelmente e si trova identico anche in italiano.
 Apri il [sito](https://girbix.github.io/az104/) e vai. Dal telefono, menu del browser → *Aggiungi a schermata Home*:
 si apre come un'app. I progressi restano nel browser, in locale — nessun account, nessun server.
 
+- **Studia** — la teoria in italiano, una lezione per ognuno degli 82 obiettivi della study
+  guide. Tre blocchi sempre uguali: **concetto**, **esempio**, **all'esame**. Da leggere prima
+  delle domande, e dove tornare quando il simulatore ti dice cosa ripassare.
 - **Ripasso** — le domande con risposta a scomparsa, filtri per dominio/tipo/difficoltà, ricerca,
   e segni "la sapevo / da rivedere". Serve a capire, non a misurare.
 - **Simulatore** — l'esame vero: **50 domande in 100 minuti, soglia 700/1000**, estrazione pesata
@@ -97,6 +101,11 @@ granularità con cui il simulatore ti dice cosa ripassare.
 Le 522 flashcard coprono tutti e cinque i domini: 76 identità · 109 storage · 125 compute
 · 111 networking · 101 monitoraggio.
 
+**La teoria copre gli stessi 82 obiettivi, uno per uno.** È il legame che tiene insieme le tre
+parti: sbagli una categoria nel simulatore, e quella categoria è il titolo della lezione da
+riaprire. Le lezioni non hanno una verifica indipendente più di quanta ne abbiano le domande:
+ognuna cita la sua pagina Learn, in italiano.
+
 ---
 
 ## Provenienza: perché niente ExamTopics
@@ -134,10 +143,12 @@ in locale.
 
 ```
 index.html          la home
+studia.html         la teoria, 82 lezioni
 ripasso.html        le domande, con filtri e ricerca
 simulatore.html     l'esame a tempo
 flashcards/         i CSV per Anki
 banca/              i JSON delle domande, e i lotti sorgente
+teoria/             i JSON delle lezioni, uno per dominio
 build/              gli script per rigenerare tutto, e i test
 prompt/             il prompt che ha generato la banca
 ```
@@ -152,6 +163,7 @@ cd build
 python aggiungi_domande.py --scrivi   # id in coda, mai riusati, e sdoppia EN/IT
 python chiavi_hotspot_it.py --scrivi  # riallinea le chiavi hotspot alle scelte tradotte
 python build_pagine.py                # reinietta la banca in simulatore.html e ripasso.html
+python build_teoria.py                # ricostruisce studia.html da teoria/
 ```
 
 `sotto_argomento` non è testo libero: deve essere uno degli 82 obiettivi in
@@ -174,6 +186,7 @@ I test girano sul repo così com'è, senza argomenti:
 ```bash
 cd build
 python test_contenuti.py            # dati: chiavi, hotspot, allineamento EN/IT, CSV Anki
+python test_teoria.py               # 82 lezioni per 82 obiettivi, link in italiano
 node test_esame.js                  # simulazione: durata, n. domande, soglia, pesi
 node test_widget.js                 # ogni domanda si disegna, valutata e non
 node test_ripasso.js                # payload del ripasso vs banca
