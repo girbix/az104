@@ -46,5 +46,61 @@
  "esempio": "Vuoi sapere se il collegamento fra la filiale e l'applicazione peggiora nel corso della giornata. Connection monitor campiona in continuo e ti disegna la curva: il picco delle 14 lo vedi, invece di doverlo indovinare.",
  "esame": "Network Watcher è **regionale** e viene abilitato per region. Prova singola = Connection troubleshoot; sorveglianza continua = **Connection monitor**.",
  "learn": "https://learn.microsoft.com/it-it/azure/network-watcher/network-watcher-overview"
+},
+{
+ "obiettivo": "Create a Recovery Services vault",
+ "titolo": "Recovery Services vault",
+ "concetto": "Il **Recovery Services vault** è il contenitore storico dei backup: **macchine virtuali Azure**, **Azure Files**, SQL Server dentro una VM, SAP HANA, e i carichi on-premises tramite l'agente **MARS**.\n\nOspita anche Site Recovery.\n\nLa **ridondanza** si sceglie alla creazione e si può cambiare **solo finché non ci hai messo dentro il primo backup**.",
+ "esempio": "Crei il vault accettando GRS, poi ti accorgi che ti basta LRS e vuoi risparmiare. Se non hai ancora protetto niente, la cambi. Se un backup c'è già, l'unica strada è un vault nuovo.",
+ "esame": "«Cambiare la ridondanza dopo il primo backup» → **non si può**, serve un altro vault. Ed è un dettaglio che cambia risposta a seconda che un backup esista o no: leggi bene la domanda.",
+ "learn": "https://learn.microsoft.com/it-it/azure/backup/backup-azure-recovery-services-vault-overview"
+},
+{
+ "obiettivo": "Create an Azure Backup vault",
+ "titolo": "Backup vault",
+ "concetto": "Il **Backup vault** è il contenitore più recente, e copre carichi diversi dall'altro: **Azure Disks**, **Azure Blobs**, **Azure Database for PostgreSQL**, Kubernetes.\n\nDue vault distinti, e la sorgente dati decide quale usare.",
+ "esempio": "Devi proteggere blob, dischi e un PostgreSQL flessibile: **Backup vault**. Devi proteggere VM e file share: **Recovery Services vault**. Non sono intercambiabili.",
+ "esame": "La domanda ti dà l'elenco delle cose da proteggere e ti chiede il tipo di vault. Impara le due liste: VM e Files stanno di qua, blob e dischi di là.",
+ "learn": "https://learn.microsoft.com/it-it/azure/backup/backup-vault-overview"
+},
+{
+ "obiettivo": "Create and configure a backup policy",
+ "titolo": "Backup policy",
+ "concetto": "Una **backup policy** dice due cose: **quando** fare il backup e **quanto a lungo** tenerlo. La conservazione è a livelli — giornaliera, settimanale, mensile, annuale — e li combini per ottenere la classica nonno-padre-figlio.",
+ "esempio": "Backup ogni notte alle 2. Tieni 30 giorni di punti giornalieri, 12 settimane di quelli del sabato, 12 mesi di quelli di fine mese. Copri il ripristino recente e l'archivio lungo senza conservare tutto per anni.",
+ "esame": "Allungare la conservazione **aumenta lo spazio e quindi il costo**, ma non cambia la frequenza. Sono due manopole indipendenti, e l'esame le mescola apposta.",
+ "learn": "https://learn.microsoft.com/it-it/azure/backup/backup-azure-vms-first-look-arm"
+},
+{
+ "obiettivo": "Perform backup and restore operations by using Azure Backup",
+ "titolo": "Backup e ripristino",
+ "concetto": "Da un punto di ripristino di una VM puoi:\n\n- **creare una nuova VM**\n- **ripristinare i dischi** e riagganciarli tu\n- **recuperare singoli file**, montando temporaneamente il punto di ripristino come unità\n\nQuest'ultimo è il più usato nella pratica, ed è il più dimenticato all'esame.",
+ "esempio": "Serve un solo file cancellato tre giorni fa. Non ricrei la VM: usi *File recovery*, monti il punto di ripristino, copi il file, smonti. Cinque minuti invece di un'ora.",
+ "esame": "Se la domanda dice «un solo file» o «il minimo sforzo», la risposta è il **recupero a livello di file**, non il ripristino della VM intera.",
+ "learn": "https://learn.microsoft.com/it-it/azure/backup/backup-azure-arm-restore-vms"
+},
+{
+ "obiettivo": "Configure Azure Site Recovery for Azure resources",
+ "titolo": "Site Recovery",
+ "concetto": "**Site Recovery** replica le VM in un'altra region per riaccenderle lì in caso di disastro. Non è un backup: il backup ti riporta indietro nel tempo, Site Recovery ti sposta di luogo.\n\nIl vault va creato nella **region di destinazione**, non insieme alle macchine che protegge.\n\nNella region di origine nasce un **cache storage account** che raccoglie le modifiche prima della replica.",
+ "esempio": "VM in West Europe, replica verso North Europe: il vault sta in **North Europe**. Se allaga West Europe, un vault lì dentro sarebbe irraggiungibile e non potresti orchestrare il failover — che è esattamente il momento in cui ti serve.",
+ "esame": "Il vault nella region **di destinazione**: è la risposta contro-intuitiva che l'esame ama. E finché non fai failover nella region di destinazione **non gira nessuna VM**: paghi lo storage replicato, non calcolo duplicato.",
+ "learn": "https://learn.microsoft.com/it-it/azure/site-recovery/azure-to-azure-tutorial-enable-replication"
+},
+{
+ "obiettivo": "Perform a failover to a secondary region by using Site Recovery",
+ "titolo": "Failover e failback",
+ "concetto": "Tre tipi di failover:\n\n- **test** — prova in una rete isolata, la produzione non si accorge di niente\n- **pianificato** — spegne l'origine per non perdere dati\n- **non pianificato** — per il disastro già avvenuto, l'origine può essere irraggiungibile\n\nDopo il failover la sequenza è: **commit** → **reprotect** (inverte la direzione della replica) → **failover di ritorno**.",
+ "esempio": "Verifica trimestrale: **test failover** in una VNet isolata. La produzione continua a girare, la replica non si ferma, e a fine prova fai la pulizia e non resta niente.",
+ "esame": "Esercitazione senza fermi = **test failover**, e in **rete isolata**. Il failover pianificato spegne l'origine, quindi un fermo lo produce. E senza il **reprotect** non puoi tornare indietro.",
+ "learn": "https://learn.microsoft.com/it-it/azure/site-recovery/azure-to-azure-tutorial-dr-drill"
+},
+{
+ "obiettivo": "Configure and interpret reports and alerts for backups",
+ "titolo": "Report e avvisi di backup",
+ "concetto": "I **Backup Report** si appoggiano a **Log Analytics**: ogni vault ha bisogno di un diagnostic setting che ci spinga dentro i suoi dati. Senza quello, il report è vuoto.\n\nGli **avvisi integrati** di Azure Monitor per i backup scattano da soli sui job falliti — ma per farli arrivare a qualcuno serve una alert processing rule con un action group.",
+ "esempio": "Vuoi il tasso di successo dei backup degli ultimi 90 giorni su tutti i vault. Prima i diagnostic setting verso un workspace, poi il report ha qualcosa da mostrare. Non c'è modo di scorciare: il vault da solo tiene pochi dati recenti.",
+ "esame": "I report sono alimentati da una spinta pianificata: sono indietro di **ore**, non di minuti. Per accorgerti subito di un backup fallito serve l'**avviso**, non il report.",
+ "learn": "https://learn.microsoft.com/it-it/azure/backup/configure-reports"
 }
 ]
