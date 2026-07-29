@@ -126,5 +126,69 @@
  "esempio": "Stessa applicazione, due mondi. In ACI: 2 vCPU e 4 GB, fisso, e paghi finché gira. In Container Apps: 0,5 vCPU per replica, da 0 a 10 repliche, e la spesa segue il traffico.",
  "esame": "ACI si dimensiona, Container Apps si dimensiona **e** si scala. Se la domanda contiene «automaticamente» o «in base al carico», ACI è escluso in partenza.",
  "learn": "https://learn.microsoft.com/it-it/azure/container-instances/container-instances-region-availability"
+},
+{
+ "obiettivo": "Provision an App Service plan",
+ "titolo": "App Service plan",
+ "concetto": "L'**App Service plan** è la capacità di calcolo su cui girano le app: decide tier, dimensione e numero di istanze. Un piano ospita più app, che se ne dividono le risorse.\n\nIl **sistema operativo si sceglie alla creazione** e non si cambia: Windows e Linux non convivono nello stesso piano.",
+ "esempio": "Hai un piano Windows e ti serve un'app che gira da immagine container Linux. Non c'è verso di metterla lì: crei un secondo piano Linux nella stessa region. Due piani, due fatture.",
+ "esame": "**Il piano si paga anche senza app sopra.** È fatturato per la capacità che riserva, non per le app in esecuzione: eliminare l'ultima app non ferma la spesa, va eliminato o riportato a Free il piano.",
+ "learn": "https://learn.microsoft.com/it-it/azure/app-service/overview-hosting-plans"
+},
+{
+ "obiettivo": "Configure scaling for an App Service plan",
+ "titolo": "Scalare un App Service plan",
+ "concetto": "Due direzioni, che si confondono di continuo:\n\n- **Scale up** — cambi il tier: macchine più potenti, e si sbloccano funzionalità legate al tier\n- **Scale out** — aggiungi istanze della stessa dimensione: più capacità di carico\n\nLo scale out può essere manuale o automatico con le autoscale rule.",
+ "esempio": "Il sito regge male il picco di mezzogiorno: **scale out**, da 2 a 5 istanze. Ti servono invece i deployment slot, che il tuo tier non ha: **scale up**, da Basic a Standard. Problemi diversi, leve diverse.",
+ "esame": "Se manca una **funzionalità** (slot, backup, dominio personalizzato) serve scale up. Se manca **capacità**, scale out. Lo scale out non sblocca mai nulla.",
+ "learn": "https://learn.microsoft.com/it-it/azure/app-service/manage-scale-up"
+},
+{
+ "obiettivo": "Create an App Service",
+ "titolo": "Creare un'App Service",
+ "concetto": "Creando un'app scegli: il **piano** (che le dà la region), il **runtime stack** o l'immagine container, e il **nome**, che diventa `<nome>.azurewebsites.net` e quindi deve essere **univoco in tutto Azure**.\n\nDa CLI bastano tre cose: resource group, piano, nome.",
+ "esempio": "`az webapp create --resource-group rg-web --plan plan-prod --name app-contoso-shop`\n\nNon passi la region: l'app la eredita dal piano. È il motivo per cui piano e app stanno sempre nella stessa region.",
+ "esame": "Un'app web **non** richiede uno storage account: il file system glielo dà App Service. Lo storage account serve alle **Azure Functions** sul piano Consumption, ed è un distrattore frequente.",
+ "learn": "https://learn.microsoft.com/it-it/azure/app-service/getting-started"
+},
+{
+ "obiettivo": "Configure certificates and Transport Layer Security (TLS) for an App Service",
+ "titolo": "Certificati e TLS",
+ "concetto": "Per servire HTTPS su un dominio personalizzato servono due cose: un **certificato** e un **binding**.\n\nCertificati: **App Service managed certificate** (gratuito, si rinnova da solo, dal tier Basic in su), **App Service certificate** (a pagamento), oppure un **.pfx** che carichi tu.\n\nBinding: **SNI SSL** gratuito e illimitato, **IP-based SSL** che riserva un IP dedicato e si paga.",
+ "esempio": "Devi mettere HTTPS su `shop.contoso.com` senza spendere e senza rinnovi manuali: managed certificate + binding SNI SSL. Fine.",
+ "esame": "Il certificato caricato a mano deve essere un **PFX protetto da password**, con chiave privata da almeno **2048 bit** e i certificati intermedi. E *HTTPS Only* non emette nessun certificato: reindirizza soltanto.",
+ "learn": "https://learn.microsoft.com/it-it/azure/app-service/configure-ssl-certificate"
+},
+{
+ "obiettivo": "Map an existing custom DNS name to an App Service",
+ "titolo": "Dominio personalizzato",
+ "concetto": "Due record, a seconda di dove attacchi il nome:\n\n- **sottodominio** (`www.contoso.com`) → record **CNAME** verso `<app>.azurewebsites.net`\n- **apex** (`contoso.com`) → record **A** verso l'IP in ingresso, perché un CNAME sull'apex non si può creare\n\nIn più Azure vuole la prova che il dominio è tuo: un record **TXT** chiamato `asuid.<nome>` con il Custom Domain Verification ID.",
+ "esempio": "Per `contoso.com` crei un record A verso l'IP dell'app e un TXT `asuid.contoso.com` con l'ID che trovi nel pannello *Custom domains*. Senza il TXT la convalida non passa, per quanto il record A sia giusto.",
+ "esame": "I domini personalizzati **non** sono disponibili sul tier **Free F1**: il minimo è **Shared D1**. E il record di verifica è sempre `asuid.` — `_acme-challenge` è di Let's Encrypt, non di App Service.",
+ "learn": "https://learn.microsoft.com/it-it/azure/app-service/app-service-web-tutorial-custom-domain"
+},
+{
+ "obiettivo": "Configure backup for an App Service",
+ "titolo": "Backup di un'App Service",
+ "concetto": "Il backup salva contenuto dell'app, configurazione e i **database collegati** (Azure SQL, MySQL, PostgreSQL) in uno storage account tuo. Si può programmare e si può ripristinare sulla stessa app o su un'altra.",
+ "esempio": "Prima di un aggiornamento rischioso fai un backup manuale. L'aggiornamento va male: ripristini, e torni al punto di partenza con contenuto e database allineati.",
+ "esame": "Il backup richiede tier **Standard, Premium o Isolated** — su Basic la funzionalità non c'è proprio. Un backup arriva al massimo a **10 GB** fra app e database, e uno storage account protetto da firewall o private endpoint **non** è supportato come destinazione.",
+ "learn": "https://learn.microsoft.com/it-it/azure/app-service/manage-backup"
+},
+{
+ "obiettivo": "Configure networking settings for an App Service",
+ "titolo": "Rete di un'App Service",
+ "concetto": "Due direzioni da non confondere:\n\n- **in uscita** — *regional VNet integration*: l'app raggiunge indirizzi privati dentro una VNet. La subnet dev'essere vuota e **delegata** a `Microsoft.Web/serverFarms`\n- **in ingresso** — *private endpoint*: l'app riceve un IP privato e sparisce da internet\n\nLe **access restriction** filtrano invece chi può chiamare l'endpoint pubblico.",
+ "esempio": "L'app deve raggiungere un database su IP privato, ma restare pubblica per i clienti. Serve **VNet integration** (uscita). Un private endpoint farebbe l'opposto: chiuderebbe l'ingresso pubblico senza aiutare le chiamate in uscita.",
+ "esame": "Integration = **uscita**, private endpoint = **ingresso**. Metà delle domande di rete su App Service si risolve tenendo dritta questa distinzione.",
+ "learn": "https://learn.microsoft.com/it-it/azure/app-service/overview-vnet-integration"
+},
+{
+ "obiettivo": "Configure deployment slots for an App Service",
+ "titolo": "Deployment slot",
+ "concetto": "Uno **slot** è una copia dell'app con un suo hostname: ci distribuisci la versione nuova, la provi, e poi fai lo **swap** con la produzione. Lo swap scambia il contenuto, non spegne niente.\n\nSlot dal tier **Standard** (5) e **Premium** (20).\n\nAlcune impostazioni **restano allo slot** e non seguono lo scambio.",
+ "esempio": "Distribuisci in *staging*, controlli che l'app risponda, fai swap: la produzione passa alla versione nuova senza downtime. Se qualcosa non va, rifai swap e sei tornato indietro.",
+ "esame": "**Non** vengono scambiati: nomi di dominio personalizzati, impostazioni di scalabilità, certificati non pubblici e TLS. Le app setting e le connection string **sì**, a meno che non le spunti come *deployment slot setting*, e allora restano attaccate allo slot.",
+ "learn": "https://learn.microsoft.com/it-it/azure/app-service/deploy-staging-slots"
 }
 ]
