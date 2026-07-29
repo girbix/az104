@@ -1,0 +1,122 @@
+[
+{
+ "obiettivo": "Create users and groups",
+ "titolo": "Utenti e gruppi",
+ "concetto": "Microsoft Entra ID è la rubrica delle identità: gli **utenti** sono le persone (o i servizi) che accedono, i **gruppi** servono a dare permessi a molti in un colpo solo. Ci sono due tipi di gruppo: **Security**, per assegnare permessi su Azure, e **Microsoft 365**, che oltre ai permessi porta con sé casella condivisa, calendario e Teams.\n\nL'appartenenza può essere **Assigned** (li metti dentro a mano) o **Dynamic** (una regola sugli attributi decide chi entra ed esce da solo).",
+ "esempio": "Vuoi che tutti i commerciali vedano un certo resource group. Invece di 40 assegnazioni, crei un gruppo Security dinamico con la regola `user.department -eq \"Sales\"` e assegni il ruolo **una volta** al gruppo. Quando assumono un commerciale nuovo, entra da solo il giorno che gli compilano il reparto.",
+ "esame": "I gruppi dinamici richiedono una licenza **Microsoft Entra ID P1**. E un gruppo dinamico non si popola a mano: se provi ad aggiungere un membro, il portale non te lo lascia fare.",
+ "learn": "https://learn.microsoft.com/it-it/entra/fundamentals/how-to-manage-groups"
+},
+{
+ "obiettivo": "Manage user and group properties",
+ "titolo": "Proprietà di utenti e gruppi",
+ "concetto": "Ogni utente ha degli attributi: nome, **UPN** (l'indirizzo con cui accede), reparto, qualifica, manager, e la **usage location**. Alcuni sono decorativi, altri fanno funzionare le cose.\n\nDue contano davvero: la **usage location**, senza la quale non puoi assegnare licenze, e gli attributi usati dalle regole dei gruppi dinamici, che se sbagli spostano le persone nel gruppo sbagliato.",
+ "esempio": "Crei un utente, provi ad assegnargli Microsoft 365 E3 e l'assegnazione fallisce senza un motivo chiaro. Manca la usage location: alcuni servizi non sono disponibili ovunque, quindi Entra vuole sapere il paese prima di darti la licenza. La imposti su *Italy* e la licenza va.",
+ "esame": "La usage location è la risposta a quasi ogni domanda del tipo «l'assegnazione della licenza fallisce, cosa manca». Manager, job title ed employee ID non bloccano **mai** una licenza.",
+ "learn": "https://learn.microsoft.com/it-it/entra/fundamentals/how-to-manage-user-profile-info"
+},
+{
+ "obiettivo": "Manage licenses in Microsoft Entra ID",
+ "titolo": "Licenze",
+ "concetto": "Le licenze si assegnano all'utente direttamente oppure — molto meglio — a un **gruppo**: chi entra nel gruppo riceve la licenza, chi esce la perde. Si chiama *group-based licensing*.\n\nOgni licenza contiene più **service plan** che puoi accendere e spegnere singolarmente.",
+ "esempio": "Assegni Microsoft 365 E3 al gruppo *Tutti i dipendenti*. Un neoassunto viene messo nel gruppo dal sistema HR e la mattina dopo ha già la casella. Il giorno che se ne va, esce dal gruppo e la licenza torna disponibile senza che nessuno se ne debba ricordare.",
+ "esame": "Se un utente ha la licenza sia diretta sia da gruppo, togliere il gruppo **non** gliela toglie: quella diretta resta. È il motivo per cui le licenze diritte sono difficili da governare.",
+ "learn": "https://learn.microsoft.com/it-it/entra/identity/users/licensing-groups-assign"
+},
+{
+ "obiettivo": "Manage external users",
+ "titolo": "Utenti esterni (guest)",
+ "concetto": "Un **guest** è una persona di un'altra organizzazione che inviti nel tuo tenant. Entra con le sue credenziali, a casa sua, e nel tuo tenant compare come oggetto utente con `userType = Guest`.\n\nQuanto possono vedere lo decidi con le **guest user access restrictions**, che hanno tre livelli: come i membri, accesso limitato (predefinito), oppure il più restrittivo, in cui il guest vede solo i propri oggetti.",
+ "esempio": "Un consulente esterno deve lavorare su un resource group. Lo inviti come guest, gli assegni **Contributor** solo su quel resource group. Vede quello e nient'altro — e quando il progetto finisce elimini l'oggetto guest, senza aver mai creato una password nel tuo tenant.",
+ "esame": "Invitare un guest non gli dà **nessun** accesso ad Azure: l'invito riguarda la directory, i permessi sulle risorse restano una questione di ruoli RBAC da assegnare a parte.",
+ "learn": "https://learn.microsoft.com/it-it/entra/external-id/what-is-b2b"
+},
+{
+ "obiettivo": "Configure self-service password reset (SSPR)",
+ "titolo": "Reimpostazione password self-service",
+ "concetto": "**SSPR** lascia che gli utenti si reimpostino la password da soli, dimostrando chi sono con metodi alternativi: telefono, email secondaria, domande di sicurezza, app Authenticator.\n\nConfiguri quanti metodi servono (uno o due) e quali sono ammessi. Puoi abilitarlo per tutti o per un gruppo soltanto.",
+ "esempio": "Attivi SSPR per il gruppo *Filiali*, richiedendo due metodi. Un venditore dimentica la password di domenica: va su aka.ms/sspr, riceve un codice sul cellulare, risponde a una domanda e rientra. Nessuno ha dovuto aprire un ticket.",
+ "esame": "Con **password writeback** la nuova password torna anche nell'Active Directory locale: senza, in ambiente ibrido l'utente cambia la password cloud e resta fuori dal dominio. Richiede Entra ID P1.",
+ "learn": "https://learn.microsoft.com/it-it/entra/identity/authentication/tutorial-enable-sspr"
+},
+{
+ "obiettivo": "Manage built-in Azure roles",
+ "titolo": "Ruoli predefiniti di Azure",
+ "concetto": "**Azure RBAC** decide chi può fare cosa sulle risorse. I quattro ruoli fondamentali:\n\n- **Owner** — tutto, compreso dare accesso ad altri\n- **Contributor** — tutto sulle risorse, **ma non** dare accesso\n- **Reader** — solo guardare\n- **User Access Administrator** — solo dare accesso, niente gestione risorse\n\nEsiste poi una distinzione decisiva: **piano di gestione** (la risorsa: crearla, configurarla) contro **piano dati** (il contenuto: leggere un blob, scrivere in una coda). Sono permessi separati.",
+ "esempio": "Dai a un collega **Storage Account Contributor**. Può cambiare la configurazione dello storage account, rigenerare le chiavi, perfino cancellarlo — ma se apre un container non vede un file. Per leggere i blob gli serve **Storage Blob Data Reader**, che è un ruolo *dati*.",
+ "esame": "Questa è la domanda più frequente di tutto il dominio. «Contributor sullo storage ma non vede i blob»: normale, servono le **DataActions**. E ricorda che Contributor non può assegnare ruoli — glielo impediscono le sue NotActions.",
+ "learn": "https://learn.microsoft.com/it-it/azure/role-based-access-control/built-in-roles"
+},
+{
+ "obiettivo": "Assign roles at different scopes",
+ "titolo": "Ambiti di assegnazione",
+ "concetto": "Un ruolo si assegna a un **ambito**, e i permessi scendono verso il basso su quattro livelli:\n\n`management group → subscription → resource group → risorsa`\n\nPiù in alto assegni, più cose copri. I permessi sono **additivi**: se hai Reader sulla subscription e Contributor su un resource group, dentro quel gruppo sei Contributor e altrove sei Reader.",
+ "esempio": "Il team di rete deve gestire le VNet di tutta l'azienda ma non toccare le macchine virtuali. Assegni **Network Contributor** al management group radice: copre ogni subscription, comprese quelle che verranno create l'anno prossimo.",
+ "esame": "Un ambito più alto **non** sovrascrive uno più basso, e due ruoli non si annullano mai a vicenda: si sommano. L'unica cosa che sottrae è una *deny assignment*, che però la crea Azure, non tu.",
+ "learn": "https://learn.microsoft.com/it-it/azure/role-based-access-control/scope-overview"
+},
+{
+ "obiettivo": "Interpret access assignments",
+ "titolo": "Leggere le assegnazioni di accesso",
+ "concetto": "Per capire cosa può fare davvero una persona non basta guardare un'assegnazione: bisogna sommare tutto quello che eredita da ogni livello. Il pannello **Access control (IAM) → Check access** fa esattamente questo conto.\n\nDentro una definizione di ruolo:\n\n- **Actions** — cosa è permesso (piano di gestione)\n- **NotActions** — cosa viene sottratto dalle Actions\n- **DataActions** / **NotDataActions** — lo stesso, sul contenuto",
+ "esempio": "Contributor ha `Actions: *` — sembra poter tutto. Ma le sue NotActions sottraggono `Microsoft.Authorization/*/Write`, ed è precisamente lì che sparisce la facoltà di assegnare ruoli. Il carattere jolly dà tutto, la NotAction toglie il pezzo pericoloso.",
+ "esame": "NotActions **non è una negazione**: non blocca un permesso che arriva da un'altra assegnazione. Sottrae solo dalle Actions di quello stesso ruolo. Se un secondo ruolo te lo concede, il permesso ce l'hai.",
+ "learn": "https://learn.microsoft.com/it-it/azure/role-based-access-control/role-definitions"
+},
+{
+ "obiettivo": "Implement and manage Azure Policy",
+ "titolo": "Azure Policy",
+ "concetto": "RBAC dice **chi** può agire; Azure Policy dice **cosa** è ammesso. Una policy valuta le risorse e applica un **effetto**:\n\n- **Deny** — blocca la creazione\n- **Audit** — lascia fare ma segnala\n- **Modify** — aggiunge o cambia proprietà (es. tag)\n- **DeployIfNotExists** — distribuisce ciò che manca\n\nModify e DeployIfNotExists agiscono sul già esistente solo tramite una **remediation task**, e hanno bisogno di una **managed identity** con i permessi giusti.",
+ "esempio": "Vuoi che nessuno crei risorse fuori dall'Europa. Assegni la policy predefinita *Allowed locations* con effetto Deny e le region consentite. Da quel momento un deployment in East US fallisce prima di partire, con un messaggio che cita la policy.",
+ "esame": "Deny agisce **solo** sulle risorse nuove o modificate: quelle che già violano la regola restano lì e compaiono come *non-compliant*. Per sistemarle serve intervenire, non aspettare.",
+ "learn": "https://learn.microsoft.com/it-it/azure/governance/policy/overview"
+},
+{
+ "obiettivo": "Configure resource locks",
+ "titolo": "Blocchi sulle risorse",
+ "concetto": "Un **lock** protegge dagli errori umani, non dagli utenti malintenzionati. Due tipi:\n\n- **CanNotDelete** — puoi leggere e modificare, non eliminare\n- **ReadOnly** — puoi solo leggere\n\nSi eredita verso il basso: un lock sul resource group protegge tutto ciò che contiene.",
+ "esempio": "Metti CanNotDelete sul resource group di produzione. Un collega lancia per sbaglio l'eliminazione del gruppo: l'operazione fallisce **per intero**, perché Azure non fa eliminazioni parziali. Nessuna risorsa viene persa, nemmeno quelle non bloccate.",
+ "esame": "ReadOnly è più insidioso di quanto sembri: può rompere operazioni che sembrano di sola lettura ma che scrivono dietro le quinte, come elencare le chiavi di uno storage account. E chi ha Owner o User Access Administrator può sempre togliere il lock.",
+ "learn": "https://learn.microsoft.com/it-it/azure/azure-resource-manager/management/lock-resources"
+},
+{
+ "obiettivo": "Apply and manage tags on resources",
+ "titolo": "Tag",
+ "concetto": "I **tag** sono coppie nome-valore che attacchi alle risorse per ritrovarle e per ripartire i costi. Massimo **50 tag** per risorsa.\n\nIl punto che sorprende tutti: **i tag non si ereditano**. Un tag sul resource group non scende sulle risorse dentro.",
+ "esempio": "Metti `CostCenter = 4711` sul resource group e in Cost Management le VM continuano a comparire senza centro di costo. Per farlo scendere davvero assegni la policy predefinita **Inherit a tag from the resource group** (effetto Modify) e lanci una remediation task per le risorse già esistenti.",
+ "esame": "«I tag del resource group non compaiono sulle risorse» non è un guasto, è il comportamento previsto. La soluzione è sempre Azure Policy con effetto Modify più remediation task.",
+ "learn": "https://learn.microsoft.com/it-it/azure/azure-resource-manager/management/tag-resources"
+},
+{
+ "obiettivo": "Manage resource groups",
+ "titolo": "Resource group",
+ "concetto": "Un **resource group** è il contenitore che raggruppa risorse con lo stesso ciclo di vita. Tre regole da tenere a mente:\n\n- una risorsa sta in **un solo** resource group alla volta\n- la **location** del gruppo riguarda solo i suoi metadati: dentro puoi metterci risorse di qualsiasi region\n- eliminare il gruppo **elimina tutto** ciò che contiene",
+ "esempio": "Per un progetto a termine crei `rg-progetto-x` e ci metti dentro VM, dischi, VNet e storage. A fine progetto elimini il resource group: sparisce tutto in un colpo, senza risorse orfane che continuano a costare.",
+ "esame": "Spostare risorse fra gruppi **blocca** temporaneamente entrambi i gruppi in scrittura, ma le risorse continuano a funzionare: il blocco riguarda il piano di gestione, non il servizio.",
+ "learn": "https://learn.microsoft.com/it-it/azure/azure-resource-manager/management/manage-resource-groups-portal"
+},
+{
+ "obiettivo": "Manage subscriptions",
+ "titolo": "Subscription",
+ "concetto": "La **subscription** è insieme un confine di fatturazione e un confine di isolamento: le quote e i limiti si contano lì. Ogni subscription si appoggia a **una sola** directory Entra, mentre una directory può reggerne molte.",
+ "esempio": "Dopo un'acquisizione devi portare la subscription della società comprata nel tuo tenant. Fai il trasferimento di directory — e ti ritrovi che **nessuno** ha più accesso: le assegnazioni di ruolo sono sparite tutte e vanno rifatte per le persone del tenant nuovo.",
+ "esame": "Trasferire una subscription in un'altra directory **rimuove tutte le assegnazioni di ruolo Azure**, a ogni ambito. Non vengono rimappate: i principal della vecchia directory semplicemente non esistono più lì.",
+ "learn": "https://learn.microsoft.com/it-it/azure/role-based-access-control/transfer-subscription"
+},
+{
+ "obiettivo": "Manage costs by using alerts, budgets, and Azure Advisor recommendations",
+ "titolo": "Costi, budget e Advisor",
+ "concetto": "**Cost Management** mostra la spesa, i **budget** ti avvisano prima che diventi un problema, **Azure Advisor** suggerisce dove tagliare.\n\nUn budget può avvisare su due condizioni diverse:\n\n- **Actual** — la spesa ha *già* superato la soglia\n- **Forecasted** — Azure *prevede* che la supererà",
+ "esempio": "Metti un budget di 1.000 € al mese sulla subscription di sviluppo, con un avviso forecasted all'80%. A metà mese Azure calcola che di questo passo arriverai a 1.200 € e ti manda l'email: hai ancora due settimane per spegnere qualcosa.",
+ "esame": "Se la domanda dice «avvisami **prima** di sforare», la risposta è **forecasted**. Se dice «quando ho superato», è actual. Advisor invece guarda la telemetria d'uso reale — CPU e rete — per dirti quali VM sono sovradimensionate.",
+ "learn": "https://learn.microsoft.com/it-it/azure/cost-management-billing/costs/cost-mgt-alerts-monitor-usage-spending"
+},
+{
+ "obiettivo": "Configure management groups",
+ "titolo": "Management group",
+ "concetto": "I **management group** stanno sopra le subscription e servono ad applicare policy e ruoli a tutte insieme. Formano un albero: ogni nodo ha **un solo** genitore, fino a **sei livelli** di profondità oltre alla radice.\n\nIl **management group radice** viene creato da solo per la directory, non si può eliminare, e ogni subscription nuova ci finisce sotto per impostazione predefinita.",
+ "esempio": "Crei due management group, *Produzione* e *Sviluppo*. Su Produzione assegni una policy che vieta le VM di dimensione grande; su Sviluppo no. Ogni subscription che sposti sotto Produzione eredita la regola all'istante, senza doverla riassegnare.",
+ "esame": "Se la domanda chiede «una sola assegnazione che copra anche le subscription future», la risposta è **il management group radice**. Assegnare subscription per subscription non copre quelle che non esistono ancora.",
+ "learn": "https://learn.microsoft.com/it-it/azure/governance/management-groups/overview"
+}
+]
