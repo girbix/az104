@@ -38,5 +38,45 @@
  "esempio": "Una VM non raggiunge un server. IP flow verify dice *allowed*, quindi non è un NSG. Next hop mostra *Virtual appliance*: c'è una UDR che manda il traffico a un firewall che lo sta scartando. In due passaggi hai isolato il punto.",
  "esame": "Prova **singola** = Connection troubleshoot. Sorveglianza **nel tempo** con avvisi = Connection monitor. È la coppia che l'esame scambia più spesso.",
  "learn": "https://learn.microsoft.com/it-it/azure/network-watcher/network-watcher-overview"
+},
+{
+ "obiettivo": "Create and configure network security groups (NSGs) and application security groups",
+ "titolo": "NSG e ASG",
+ "concetto": "Un **NSG** è una lista di regole che consentono o negano traffico. Ogni regola ha una **priorità** da 100 a 4096: si valutano dal numero più basso e **la prima che corrisponde vince**, le altre non vengono nemmeno lette.\n\nUn NSG si associa a una **subnet**, a una **NIC**, o a entrambe.\n\nUn **ASG** è un'etichetta che raggruppa NIC, così scrivi le regole per ruolo invece che per indirizzo.",
+ "esempio": "Invece di elencare gli IP dei web server, crei l'ASG `asg-web`, ci metti dentro le loro NIC, e scrivi una regola sola: da `asg-web` verso `asg-db` sulla porta 1433. Quando aggiungi un server, lo metti nell'ASG e la regola vale già.",
+ "esame": "L'NSG è **stateful**: se consenti il traffico in ingresso, la risposta esce senza bisogno di una regola in uscita. È il motivo per cui la risposta a «che regola aggiungo per far tornare indietro il traffico» è spesso **nessuna**.",
+ "learn": "https://learn.microsoft.com/it-it/azure/virtual-network/network-security-groups-overview"
+},
+{
+ "obiettivo": "Evaluate effective security rules in NSGs",
+ "titolo": "Regole di sicurezza effettive",
+ "concetto": "Con due NSG in gioco, l'ordine di valutazione dipende dalla direzione:\n\n- **in ingresso** — prima la **subnet**, poi la **NIC**\n- **in uscita** — prima la **NIC**, poi la **subnet**\n\nOgni NSG viene valutato per conto suo, e il traffico deve passare **entrambi**. La vista **Effective security rules** sulla NIC unisce tutto e mostra il risultato vero.",
+ "esempio": "La subnet nega il 3389 con priorità 200, la NIC lo consente con priorità 100. Il traffico in ingresso **non passa**: la subnet viene valutata prima e la sua negazione chiude il discorso. La priorità più bassa della NIC non conta, perché la priorità ordina le regole *dentro* un NSG, non fra NSG diversi.",
+ "esame": "Guardare un solo NSG porta quasi sempre alla conclusione sbagliata. La vista **Effective security rules** è la risposta a ogni domanda del tipo «quali regole si applicano davvero».",
+ "learn": "https://learn.microsoft.com/it-it/azure/virtual-network/network-security-group-how-it-works"
+},
+{
+ "obiettivo": "Implement Azure Bastion",
+ "titolo": "Azure Bastion",
+ "concetto": "**Bastion** dà RDP e SSH alle VM **dal browser**, passando dal portale, senza che le macchine abbiano un IP pubblico e senza aprire 3389 o 22 verso internet.\n\nVuole una subnet dedicata chiamata esattamente **AzureBastionSubnet**, di almeno **/26**.",
+ "esempio": "Tre VM senza IP pubblico, NSG che nega tutto dall'esterno. Distribuisci Bastion nella VNet e da quel momento ci entri dal portale in HTTPS: la superficie esposta a internet resta zero.",
+ "esame": "Il nome della subnet **non è modificabile**: se non si chiama `AzureBastionSubnet` il deployment fallisce. E la dimensione minima è `/26` — la `/27` che si trova ancora in giro nelle guide vecchie non basta più.",
+ "learn": "https://learn.microsoft.com/it-it/azure/bastion/bastion-overview"
+},
+{
+ "obiettivo": "Configure service endpoints for Azure platform as a service (PaaS)",
+ "titolo": "Service endpoint",
+ "concetto": "Un **service endpoint** attivato su una subnet fa due cose: manda il traffico verso il servizio PaaS sulla rete di Azure invece che su internet, e fa arrivare al servizio l'**identità della subnet**, così puoi ammetterla nel suo firewall.\n\nIl servizio conserva il suo **IP pubblico**: non riceve un indirizzo privato.",
+ "esempio": "Attivi `Microsoft.Storage` sulla subnet, poi sullo storage account porti il firewall su reti selezionate e aggiungi la regola per quella subnet. Le VM entrano, il resto di internet prende 403.",
+ "esame": "Il service endpoint **da solo non protegge nulla**: senza la regola di firewall sul servizio, tutti continuano ad accedere. Sono due passaggi, sempre.",
+ "learn": "https://learn.microsoft.com/it-it/azure/virtual-network/virtual-network-service-endpoints-overview"
+},
+{
+ "obiettivo": "Configure private endpoints for Azure PaaS",
+ "titolo": "Private endpoint",
+ "concetto": "Un **private endpoint** è una NIC nella tua subnet con un **IP privato** che rappresenta il servizio PaaS. Il servizio entra dentro la tua rete, e ci arrivi anche da on-premises via VPN o ExpressRoute.\n\nPerché il nome pubblico risolva all'IP privato serve una **private DNS zone** — per esempio `privatelink.blob.core.windows.net` — collegata alla VNet.",
+ "esempio": "Metti un private endpoint sullo storage e disabiliti l'accesso pubblico. Ora `stcontoso.blob.core.windows.net` risolve a `10.0.1.4` dall'interno, e da internet non è più raggiungibile in nessun modo.",
+ "esame": "Service endpoint = il traffico resta sulla rete Azure ma il servizio tiene l'IP pubblico. Private endpoint = il servizio prende un **IP privato tuo**. Se la domanda nomina on-premises o una DNS zone `privatelink.*`, è private endpoint.",
+ "learn": "https://learn.microsoft.com/it-it/azure/private-link/private-endpoint-overview"
 }
 ]
