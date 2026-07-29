@@ -181,6 +181,13 @@ select,.txt{width:100%;background:var(--card-2);border:1px solid var(--line);bor
 .dragrow .item{flex:1;font-size:14px;line-height:1.45}
 .dragrow.ok{border-color:var(--good);background:var(--good-soft)}
 .dragrow.no{border-color:var(--bad);background:var(--bad-soft)}
+/* riserva: opzioni lasciate fuori dall'area risposta */
+.dragsep{display:flex;align-items:center;gap:9px;max-width:68ch;margin:5px 0 1px;
+  font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);font-weight:600}
+.dragsep::after{content:"";flex:1;height:1px;background:var(--line);border-radius:1px}
+.dragrow.unused{background:var(--card-2);border-style:dashed}
+.dragrow.unused .item{color:var(--text-2)}
+.dragrow.unused .pos{opacity:.5}
 .arrows{display:flex;gap:3px;flex:0 0 auto}
 .arrows button{width:24px;height:24px;border:1px solid var(--line);background:var(--card);border-radius:5px;
   cursor:pointer;color:var(--text-3);line-height:0;display:flex;align-items:center;justify-content:center}
@@ -548,9 +555,12 @@ function grade(q, ans){
       const want = hotspotKeys(q), got = (ans || []).map(norm);
       return want.length === got.length && want.every((w, i) => w === got[i]);
     }
+    /* Una drag_drop puo' chiedere N azioni su piu' opzioni: le restanti sono
+       distrattori da lasciare fuori. Contano solo i primi want.length slot,
+       cioe' l'area risposta; il resto della lista e' la riserva non usata. */
     case "drag_drop": {
       const want = splitAns(key), got = (ans || []).map(norm);
-      return want.length === got.length && want.every((w, i) => w === got[i]);
+      return got.length >= want.length && want.every((w, i) => w === got[i]);
     }
     default:
       return norm(ans) === norm(key);
@@ -889,7 +899,14 @@ function questionCard(q, opt){
     hotspot:"Scegli un valore per ogni elenco a discesa.",
     drag_drop:"Ordina gli elementi nella sequenza corretta."
   };
-  if(hints[q.tipo]) body.appendChild(el("div", "hint", hints[q.tipo]));
+  let hintTxt = hints[q.tipo];
+  if(q.tipo === "drag_drop"){
+    const nOpt = optionsOf(q).length, nKey = splitAns(correctOf(q)).length;
+    if(nKey < nOpt)
+      hintTxt = "Porta in alto le " + nKey + " azioni richieste, nell'ordine corretto. " +
+                "Le altre restano sotto la linea: escluderle fa parte della risposta.";
+  }
+  if(hintTxt) body.appendChild(el("div", "hint", hintTxt));
 
   const answered = opt.answered !== undefined ? opt.answered : null;
   const locked = exam ? false : sShown;
@@ -1015,14 +1032,28 @@ function answerUI(q, state, locked, exam, opt){
   if(q.tipo === "drag_drop"){
     const opts = optionsOf(q);
     const want = splitAns(key);
+    /* N = quante azioni entrano nell'area risposta. Se la chiave e' piu' corta
+       dell'elenco, le opzioni in eccesso sono distrattori: vanno lasciate sotto
+       la linea, e lasciarle fuori fa parte della risposta. */
+    const N = Math.min(want.length, opts.length);
     if(!Array.isArray(state.ans) || !state.ans.length) state.ans = opts.map(o => o.key);
     const draw = () => {
       wrap.innerHTML = "";
       state.ans.forEach((k, i) => {
         const o = opts.find(x => x.key === k) || { key:k, text:k };
-        const row = el("div", "dragrow");
-        if(graded) row.classList.add(norm(k) === want[i] ? "ok" : "no");
-        row.appendChild(el("span", "pos", String(i + 1)));
+        const inArea = i < N;
+        if(i === N){
+          const sep = el("div", "dragsep");
+          sep.appendChild(el("span", null, "Non utilizzate"));
+          wrap.appendChild(sep);
+        }
+        const row = el("div", "dragrow" + (inArea ? "" : " unused"));
+        const pos = want.indexOf(norm(k));
+        if(graded){
+          if(inArea) row.classList.add(norm(k) === want[i] ? "ok" : "no");
+          else if(pos >= 0) row.classList.add("no");
+        }
+        row.appendChild(el("span", "pos", inArea ? String(i + 1) : "—"));
         const it = el("span", "item"); it.innerHTML = rich(o.text); row.appendChild(it);
         if(!locked){
           const ar = el("span", "arrows");
@@ -1034,7 +1065,10 @@ function answerUI(q, state, locked, exam, opt){
           dn.onclick = () => { [state.ans[i+1], state.ans[i]] = [state.ans[i], state.ans[i+1]]; draw(); emit(); };
           ar.appendChild(up); ar.appendChild(dn); row.appendChild(ar);
         }else if(graded){
-          row.appendChild(el("span", "mark", norm(k) === want[i] ? "OK" : "pos. " + (want.indexOf(norm(k)) + 1)));
+          row.appendChild(el("span", "mark",
+            inArea
+              ? (norm(k) === want[i] ? "OK" : pos >= 0 ? "pos. " + (pos + 1) : "da non usare")
+              : (pos >= 0 ? "mancante · pos. " + (pos + 1) : "correttamente esclusa")));
         }
         wrap.appendChild(row);
       });
@@ -1397,8 +1431,8 @@ function confirmFinish(){
 function finishExam(timeout){
   clearInterval(exTimer);
   EX.done = true;
-  EX.results = EX.qs.map(q => ({ id:q.id, dominio:q.dominio, ok:grade(q, EX.ans[q.id]),
-                                 blank:isBlank(EX.ans[q.id]) }));
+  EX.results = EX.qs.map(q => ({ id:q.id, dominio:q.dominio, sub:q.sotto_argomento,
+                                 ok:grade(q, EX.ans[q.id]), blank:isBlank(EX.ans[q.id]) }));
   const ok = EX.results.filter(r => r.ok).length;
   EX.score = Math.round(ok / EX.qs.length * 1000);
   EX.ts = new Date().toISOString();
@@ -1432,7 +1466,10 @@ function renderExamResult(){
   sc.appendChild(el("div", "verdict", pass ? "Superato" : "Non superato"));
   const sub = el("p", "lede");
   sub.style.cssText = "margin:7px 0 0;font-size:13.5px";
+  const nulle = EX.results.filter(r => r.blank).length;
   sub.textContent = ok + " risposte corrette su " + EX.qs.length +
+    " · " + pct(ok, EX.qs.length) + "%" +
+    (nulle ? " · " + nulle + " senza risposta" : "") +
     (EX.timeout ? " · tempo scaduto" : "");
   sc.appendChild(sub);
 
@@ -1478,6 +1515,51 @@ function renderExamResult(){
   });
   t.appendChild(tb); tw.appendChild(t); dp.appendChild(tw);
   wrap.appendChild(dp);
+
+  /* ---- categorie da ripassare ----
+     Il dominio dice "vai male in rete"; il sotto-argomento dice su cosa. E'
+     quello che serve per decidere cosa riaprire stasera, quindi sta qui e non
+     solo nelle statistiche cumulative. */
+  const perSub = {};
+  EX.results.forEach(r => {
+    const k = r.sub || "—";
+    const s = (perSub[k] = perSub[k] || { n:0, ko:0, dom:r.dominio });
+    s.n++; if(!r.ok) s.ko++;
+  });
+  const daRipassare = Object.entries(perSub).filter(([, s]) => s.ko > 0)
+    .sort((a, b) => (b[1].ko - a[1].ko) || (a[1].n - b[1].n));
+
+  const rp = el("div", "panel");
+  rp.appendChild(el("h3", null, "Categorie da ripassare"));
+  if(daRipassare.length){
+    const cap = el("p");
+    cap.style.cssText = "font-size:12px;color:var(--text-3);margin:-3px 0 10px;line-height:1.5";
+    cap.textContent = "I sotto-argomenti in cui hai sbagliato in questa prova, dai più critici in giù. " +
+      "Nel Ripasso trovi lo stesso filtro « Sotto-argomento ».";
+    rp.appendChild(cap);
+    const tw2 = el("div", "tblwrap");
+    const t2 = el("table");
+    t2.innerHTML = "<thead><tr><th>Sotto-argomento</th><th style='text-align:right'>Errori</th>" +
+      "<th style='text-align:right'>Uscite</th><th></th></tr></thead>";
+    const tb2 = el("tbody");
+    daRipassare.forEach(([k, s]) => {
+      const p = pct(s.n - s.ko, s.n);
+      const cls = p >= 50 ? "mid" : "no";
+      const lbl = s.ko === s.n ? "tutte sbagliate" : p + "% corrette";
+      const tr = el("tr");
+      tr.innerHTML = "<td>" + esc(k) + "<div style='font-size:11px;color:var(--text-3)'>" +
+        esc(DOM_IT[s.dom] || s.dom) + "</div></td><td class='num'><b>" + s.ko + "</b></td>" +
+        "<td class='num'>" + s.n + "</td><td><span class='pill " + cls + "'>" + esc(lbl) + "</span></td>";
+      tb2.appendChild(tr);
+    });
+    t2.appendChild(tb2); tw2.appendChild(t2); rp.appendChild(tw2);
+  }else{
+    const p = el("p");
+    p.style.cssText = "color:var(--text-3);font-size:13px;margin:0";
+    p.textContent = "Nessun errore: non c'è niente da ripassare in questa prova.";
+    rp.appendChild(p);
+  }
+  wrap.appendChild(rp);
 
   /* actions */
   const act = el("div", "panel");

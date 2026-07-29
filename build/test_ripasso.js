@@ -9,14 +9,26 @@
 const fs = require("fs");
 const path = require("path");
 
-const base = process.argv[2];
-if (!base) {
-  console.error("uso: node test_ripasso.js <cartella AZ-104>");
-  process.exit(1);
-}
+const base = process.argv[2] || path.resolve(__dirname, "..");
 
-const html = fs.readFileSync(path.join(base, "az104_ripasso.html"), "utf8");
-const banca = JSON.parse(fs.readFileSync(path.join(base, "az104_question_bank_it.json"), "utf8"));
+/* Nel repo la pagina e' pubblicata come ripasso.html nella radice e la banca sta
+   in banca/; appena costruita ha invece i nomi lunghi, affiancata alla banca.
+   Il test accetta entrambe le disposizioni cosi' vale prima e dopo il deploy. */
+const scegli = (...cand) => {
+  const hit = cand.find((p) => fs.existsSync(p));
+  if (!hit) {
+    console.error(`file non trovato, cercato:\n  ${cand.join("\n  ")}`);
+    process.exit(1);
+  }
+  return hit;
+};
+
+const html = fs.readFileSync(scegli(
+  path.join(base, "az104_ripasso.html"),
+  path.join(base, "ripasso.html")), "utf8");
+const banca = JSON.parse(fs.readFileSync(scegli(
+  path.join(base, "az104_question_bank_it.json"),
+  path.join(base, "banca", "az104_question_bank_it.json")), "utf8"));
 
 let errori = 0;
 const ko = (m) => { console.log(`  FAIL  ${m}`); errori++; };

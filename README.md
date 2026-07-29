@@ -8,7 +8,7 @@ Materiale di studio per l'esame **AZ-104 (Microsoft Azure Administrator)**, alli
 | | |
 |---|---|
 | **532 domande** d'esame | con risposta, spiegazione e link alla pagina Microsoft Learn che la prova |
-| **76 flashcard** | definizioni, limiti, comandi, differenze insidiose |
+| **522 flashcard** | definizioni, limiti, comandi, differenze insidiose — tutti e cinque i domini |
 | **Simulatore** | 50 domande in 100 minuti, estrazione pesata per dominio, soglia 700/1000 |
 
 Tutto in italiano, con nomi di servizi e termini tecnici in inglese come all'esame.
@@ -40,7 +40,10 @@ si apre come un'app. I progressi restano nel browser, in locale — nessun accou
 
 - **Ripasso** — le domande con risposta a scomparsa, filtri per dominio/tipo/difficoltà, ricerca,
   e segni "la sapevo / da rivedere". Serve a capire, non a misurare.
-- **Simulatore** — l'esame vero: a tempo, pesato per dominio, con punteggio e revisione errori.
+- **Simulatore** — l'esame vero: **50 domande in 100 minuti, soglia 700/1000**, estrazione pesata
+  per dominio, nessun feedback fino alla consegna. A fine prova: punteggio, percentuale, esito per
+  dominio, **le categorie da ripassare** (i sotto-argomenti in cui hai sbagliato, dal più critico)
+  e la revisione guidata degli errori.
 
 ### In Anki
 
@@ -51,6 +54,10 @@ mazzo, separatore, HTML e tag da sole.
 | File | Cosa contiene | Mazzo |
 |---|---|---|
 | `az104_flashcard_01_identita.csv` | 76 flashcard atomiche | `AZ104::01 Identità e governance` |
+| `az104_flashcard_02_storage.csv` | 109 flashcard atomiche | `AZ104::02 Storage` |
+| `az104_flashcard_03_compute.csv` | 125 flashcard atomiche | `AZ104::03 Compute` |
+| `az104_flashcard_04_networking.csv` | 111 flashcard atomiche | `AZ104::04 Networking` |
+| `az104_flashcard_05_monitoraggio.csv` | 101 flashcard atomiche | `AZ104::05 Monitoraggio` |
 | `az104_domande_esame.csv` | 532 domande d'esame | `AZ104::Domande::01…05` |
 
 **Filtra con i tag** nella ricerca di Anki:
@@ -82,8 +89,10 @@ difficoltà (`base` `applicativa` `scenario`), stato (`verificata` `da-rivedere`
 **Tipi:** 253 scelta singola · 92 hotspot · 88 scelta multipla · 63 serie Sì/No · 21 drag-and-drop
 · 15 case study
 **Difficoltà:** 126 base · 274 applicativa · 132 scenario
+**Sotto-argomenti:** 85 distinti — sono la granularità con cui il simulatore ti dice cosa ripassare.
 
-Le flashcard sono in costruzione: per ora c'è il dominio identità e governance.
+Le 522 flashcard coprono tutti e cinque i domini: 76 identità · 109 storage · 125 compute
+· 111 networking · 101 monitoraggio.
 
 ---
 
@@ -137,9 +146,23 @@ cd build
 python assemble.py "<out>"          # banca inglese dai lotti sorgente
 python build_it.py "<out>"          # banca italiana, con validazione
 python build_ripasso.py "<out>"     # la pagina di ripasso
-node test_ripasso.js "<out>"        # verifica il ripasso
-node test_bank.js "<out>/az104_question_bank_it.json"   # verifica la valutazione
 ```
+
+I test girano sul repo così com'è, senza argomenti:
+
+```bash
+cd build
+python test_contenuti.py            # dati: chiavi, hotspot, allineamento EN/IT, CSV Anki
+node test_esame.js                  # simulazione: durata, n. domande, soglia, pesi
+node test_widget.js                 # ogni domanda si disegna, valutata e non
+node test_ripasso.js                # payload del ripasso vs banca
+node test_grading.js                # valutazione sui lotti sorgente
+node test_bank.js ../banca/az104_question_bank_it.json      # e sulla banca finale
+node test_bank.js ../banca/az104_question_bank.json
+```
+
+Escono tutti con codice diverso da zero se trovano qualcosa, così si incatenano in un hook o in
+una action.
 
 `build_it.py` **si rifiuta di scrivere** se la traduzione ha toccato una chiave tecnica.
 `build_anki_domande.py` importa il parsing da `build_ripasso.py`: una sola fonte di verità per i
@@ -148,12 +171,25 @@ sei formati di risposta.
 ### Cosa è stato verificato, e cosa no
 
 **Verificato:** le due banche confrontate campo per campo (0 errori, chiavi identiche byte per
-byte); la logica di valutazione estratta ed eseguita su entrambe (532/532 su ciascuna); il
-payload delle pagine (532/532, ogni risposta risale alla banca originale). Questo test ha trovato
-un bug reale: le hotspot con virgole nel valore (es. `@allowed(['dev', 'test'])`) venivano mal
-valutate. Corretto e riverificato.
+byte); la logica di valutazione estratta ed eseguita su entrambe (532/532 su ciascuna) e sui 544
+item dei lotti sorgente; il payload delle pagine (532/532, ogni risposta risale alla banca
+originale); i parametri della simulazione contro l'esame reale. Questi test hanno trovato due bug
+reali:
 
-**Non verificato:** le pagine non sono state provate in un browser reale, né l'import in Anki.
+- le hotspot con virgole nel valore (es. `@allowed(['dev', 'test'])`) venivano mal valutate;
+- una drag-and-drop che chiede **4 azioni su 5 opzioni** (`AZ104-0292`) era impossibile da
+  azzeccare nel simulatore, che pretendeva di ordinare tutte le opzioni. Ora l'area risposta
+  tiene solo le azioni richieste e i distrattori restano sotto la linea, come nella prova vera.
+
+Entrambi corretti e riverificati.
+
+Un controllo incrocia anche la chiave di risposta con quello che la spiegazione stessa dichiara
+("Correct: c", "Statement 2 - No", "Dropdown 1 - Premium"): su 532 domande non è emersa nessuna
+divergenza reale. Non è una verifica contro Learn, ma esclude le chiavi copiate storte.
+
+**Non verificato:** le pagine non sono state aperte in un browser reale, né l'import in Anki.
+`test_widget.js` disegna tutti e 532 i widget su un DOM finto, quindi esclude le eccezioni che
+lasciano la pagina bianca — ma non dice niente su come vengono impaginati davvero.
 E soprattutto: **502 risposte su 532 non hanno una verifica indipendente**.
 
 ---
