@@ -38,5 +38,61 @@
  "esempio": "Hai costruito un ambiente a mano nel portale e lo vuoi ricreare in collaudo. Resource group → *Export template*, poi `az bicep decompile` per ottenere un file leggibile su cui lavorare.",
  "esame": "Il template esportato **non è pronto all'uso**: contiene valori fissi, id di risorse esistenti e a volte proprietà di sola lettura. È un punto di partenza, non un artefatto da rilanciare così com'è.",
  "learn": "https://learn.microsoft.com/it-it/azure/azure-resource-manager/templates/export-template-portal"
+},
+{
+ "obiettivo": "Create a virtual machine",
+ "titolo": "Creare una macchina virtuale",
+ "concetto": "Creando una VM dal portale non crei una risorsa sola: nascono insieme il **disco OS**, una **NIC**, un **NSG**, spesso un **IP pubblico**, e la VNet se non c'era. Sono risorse separate, con ciclo di vita proprio.",
+ "esempio": "Elimini una VM che non serve più e il mese dopo la bolletta non cala come previsto: dischi, IP pubblico e NIC sono rimasti lì. Vanno eliminati a parte, o creati fin dall'inizio in un resource group dedicato da buttare tutto insieme.",
+ "esame": "Eliminare la VM **non elimina** automaticamente il disco OS né l'IP pubblico. Nelle versioni recenti del portale ci sono delle spunte per farlo, ma non sono il comportamento predefinito storico.",
+ "learn": "https://learn.microsoft.com/it-it/azure/virtual-machines/windows/quick-create-portal"
+},
+{
+ "obiettivo": "Configure encryption at host for Azure virtual machines",
+ "titolo": "Encryption at host",
+ "concetto": "Con l'**encryption at host** la cifratura avviene sull'host fisico che ospita la VM: vengono cifrati il **disco temporaneo** e le **cache** dei dischi OS e dati, e i dati viaggiano già cifrati fra host e storage.\n\nNon consuma CPU della VM, perché il lavoro non lo fa il sistema guest.\n\nVa **abilitata sulla subscription** prima di poterla usare, e la VM deve avere una dimensione che la supporti.",
+ "esempio": "Il requisito dice: disco temporaneo e cache cifrati, traffico cifrato fra calcolo e storage, e nessun impatto sulla CPU della VM. Quello è encryption at host — la parte «senza consumare CPU» è la firma che lo distingue.",
+ "esame": "È **l'unica modifica sostanziale** delle skills measured del 17 aprile 2026: ha sostituito *Configure Azure Disk Encryption*. ADE cifra dentro il sistema guest con BitLocker o dm-crypt e usa CPU della VM; encryption at host no. Se la domanda insiste sul disco temporaneo o sulla CPU, la risposta è encryption at host.",
+ "learn": "https://learn.microsoft.com/it-it/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+},
+{
+ "obiettivo": "Move a virtual machine to another resource group, subscription, or region",
+ "titolo": "Spostare una macchina virtuale",
+ "concetto": "Tre spostamenti diversi, con meccanismi diversi:\n\n- **altro resource group o subscription** — operazione di *move*, i gruppi coinvolti restano bloccati in scrittura finché non finisce\n- **altra region** — non è un move: si **ricrea** altrove, con Azure Resource Mover o Site Recovery",
+ "esempio": "Sposti una VM cifrata in un'altra subscription e l'operazione fallisce. Il Key Vault con la chiave sta ancora nella subscription vecchia: o sposti anche quello, o disabiliti prima la cifratura.",
+ "esame": "Cambiare region **non** è uno spostamento: la risorsa viene ricreata e cambia id. E durante un move i due resource group sono bloccati in scrittura, ma la VM continua a funzionare — il blocco è sul piano di gestione.",
+ "learn": "https://learn.microsoft.com/it-it/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+},
+{
+ "obiettivo": "Manage virtual machine sizes",
+ "titolo": "Dimensioni delle VM",
+ "concetto": "La **dimensione** (lo SKU) decide CPU, memoria, numero massimo di dischi dati, schede di rete e IOPS. Le famiglie ricorrenti: **B** economiche a crediti, **D** general purpose, **E** tanta memoria, **F** tanta CPU.\n\nRidimensionare richiede un riavvio, e a volte anche di deallocare.",
+ "esempio": "Vuoi passare a una dimensione che nel menu non compare. Il cluster hardware su cui gira la VM non la offre: deallochi la VM, e a quel punto Azure può ricollocarla su un cluster che la supporta.",
+ "esame": "«La dimensione che voglio non c'è nell'elenco» → **dealloca la VM**. È la risposta quasi sempre. Se la VM è in un availability set, il vincolo vale per tutto il set.",
+ "learn": "https://learn.microsoft.com/it-it/azure/virtual-machines/resize-vm"
+},
+{
+ "obiettivo": "Manage virtual machine disks",
+ "titolo": "Dischi",
+ "concetto": "Una VM ha un **disco OS**, zero o più **dischi dati**, e un **disco temporaneo**.\n\nIl temporaneo è la trappola: si chiama `D:` su Windows e `/dev/sdb` su Linux, e il suo contenuto **si perde** a ogni deallocazione o spostamento di host. Non è un disco gestito.\n\nI tipi: **Standard HDD**, **Standard SSD**, **Premium SSD**, **Ultra Disk**.",
+ "esempio": "Un'applicazione scrive i file temporanei su `D:` e dopo una manutenzione della piattaforma non li trova più. Non è un guasto: il disco temporaneo è progettato per essere volatile. I dati che devono sopravvivere vanno su un disco dati.",
+ "esame": "Il disco temporaneo **non si ripristina** e non è nel backup. E i dischi si possono espandere ma **non rimpicciolire**: per ridurre devi ricreare.",
+ "learn": "https://learn.microsoft.com/it-it/azure/virtual-machines/managed-disks-overview"
+},
+{
+ "obiettivo": "Deploy virtual machines to availability zones and availability sets",
+ "titolo": "Availability set e availability zone",
+ "concetto": "Due modi di non perdere tutto insieme:\n\n- **Availability set** — protegge *dentro* un datacenter, distribuendo le VM su **fault domain** (alimentazione e rete separate) e **update domain** (riavvii scaglionati)\n- **Availability zone** — protegge *fra* datacenter: le zone sono edifici distinti nella stessa region",
+ "esempio": "Due web server in un availability set sopravvivono al guasto di un rack e alla manutenzione di Azure. Ma se allaga l'intero datacenter finiscono giù entrambi: per quello servono zone diverse.",
+ "esame": "L'availability set si sceglie **alla creazione** e non si aggiunge dopo. Zone e set sono alternativi sulla stessa VM. Lo SLA più alto lo danno le zone.",
+ "learn": "https://learn.microsoft.com/it-it/azure/virtual-machines/availability"
+},
+{
+ "obiettivo": "Deploy and configure an Azure Virtual Machine Scale Sets",
+ "titolo": "Virtual Machine Scale Set",
+ "concetto": "Uno **scale set** gestisce un gruppo di VM identiche che cresce e cala da solo. Due modalità di orchestrazione:\n\n- **Uniform** — istanze identiche, pensate come un gregge\n- **Flexible** — più simili a VM singole gestite insieme\n\nLe **autoscale rule** decidono quando aggiungere o togliere istanze.",
+ "esempio": "Regola: se la CPU media supera il 70% per 10 minuti, aggiungi un'istanza; se scende sotto il 30%, toglila. Il picco del lunedì mattina si assorbe da solo e la notte si paga il minimo.",
+ "esame": "La **modalità di orchestrazione si decide alla creazione e non si cambia più**. Ricorre come distrattore in ogni domanda sugli scale set.",
+ "learn": "https://learn.microsoft.com/it-it/azure/virtual-machine-scale-sets/overview"
 }
 ]
