@@ -1,0 +1,42 @@
+[
+{
+ "obiettivo": "Configure Azure Storage firewalls and virtual networks",
+ "titolo": "Firewall dello storage",
+ "concetto": "Per impostazione predefinita uno storage account risponde a tutta internet. Il **firewall** lo chiude: porti l'accesso su *reti selezionate* e poi elenchi cosa è ammesso — intervalli IP pubblici, subnet tramite **service endpoint**, o eccezioni per i servizi Azure attendibili.",
+ "esempio": "Solo le VM di una subnet devono accedere. Attivi il service endpoint `Microsoft.Storage` sulla subnet, poi sullo storage porti l'accesso su reti selezionate e aggiungi la **regola di virtual network** per quella subnet. Da fuori, adesso, si prende un 403.",
+ "esame": "Il service endpoint da solo **non protegge niente**: cambia l'instradamento e rende la subnet riconoscibile, ma finché non chiudi il firewall e non aggiungi la regola, lo storage continua ad accettare tutti.",
+ "learn": "https://learn.microsoft.com/it-it/azure/storage/common/storage-network-security"
+},
+{
+ "obiettivo": "Create and use shared access signature (SAS) tokens",
+ "titolo": "Token SAS",
+ "concetto": "Un **SAS** è un URL con permessi limitati e una scadenza: lo dai a chi non deve avere le chiavi dell'account. Tre tipi:\n\n- **Account SAS** — più servizi, firmato con la chiave dell'account\n- **Service SAS** — un servizio solo, firmato con la chiave dell'account\n- **User delegation SAS** — firmato con una chiave presa da **Entra ID**, non con la chiave dell'account",
+ "esempio": "Un partner deve caricare file per 48 ore. Usi un **user delegation SAS**: non gli passi niente che derivi dalle chiavi, e per revocarlo ti basta togliere l'assegnazione di ruolo del principal che l'ha firmato.",
+ "esame": "**Rigenerare una chiave** invalida di colpo tutti i SAS firmati con quella chiave — un'accetta, non un bisturi. Il user delegation SAS è l'unico che non nasce dalle chiavi dell'account: è la risposta quando la domanda vieta di condividerle.",
+ "learn": "https://learn.microsoft.com/it-it/azure/storage/common/storage-sas-overview"
+},
+{
+ "obiettivo": "Configure stored access policies",
+ "titolo": "Stored access policy",
+ "concetto": "Una **stored access policy** si definisce sul container e conserva permessi e scadenza. Un service SAS che vi si aggancia li **eredita** invece di portarseli scritti dentro.\n\nIl vantaggio è tutto qui: cambi la policy e cambi il SAS; **elimini la policy e il SAS muore**, senza toccare le chiavi.",
+ "esempio": "Hai dato un SAS a un fornitore e vuoi chiuderglielo subito, senza rompere le altre venti applicazioni che usano la stessa chiave. Se il SAS era agganciato a una policy, elimini la policy: revocato solo quello.",
+ "esame": "«Revocare un SAS senza toccare le altre credenziali» → **eliminare la stored access policy**. Se il SAS non era agganciato a una policy, l'unica via resta rigenerare la chiave, con tutti i danni collaterali.",
+ "learn": "https://learn.microsoft.com/it-it/rest/api/storageservices/define-stored-access-policy"
+},
+{
+ "obiettivo": "Manage access keys",
+ "titolo": "Chiavi di accesso",
+ "concetto": "Ogni storage account ha **due chiavi**, key1 e key2, e ognuna dà accesso completo a tutto. Sono due proprio per poterle ruotare senza fermare nulla: sposti le applicazioni su key2, rigeneri key1, e ripeti al giro dopo.\n\nSi può anche **disabilitare del tutto** l'accesso tramite chiave, obbligando all'autenticazione Entra ID.",
+ "esempio": "Imposti una **key expiration policy** di 90 giorni. Passata la scadenza Azure non blocca niente, ma l'account risulta non conforme e la policy di governance te lo segnala: serve a farti ruotare, non a spegnerti il servizio.",
+ "esame": "Le chiavi danno accesso **completo**, senza distinzione fra piano dati e gestione e senza scadenza propria: è il motivo per cui la risposta giusta è quasi sempre «usa un SAS o Entra ID, non la chiave».",
+ "learn": "https://learn.microsoft.com/it-it/azure/storage/common/storage-account-keys-manage"
+},
+{
+ "obiettivo": "Configure identity-based access for Azure Files",
+ "titolo": "Accesso a identità per Azure Files",
+ "concetto": "Una share SMB può essere montata con le credenziali di dominio invece che con la chiave. I permessi stanno su **due livelli distinti**:\n\n- **livello share** — chi può montarla: ruoli Azure RBAC (*Storage File Data SMB Share Reader / Contributor / Elevated Contributor*)\n- **livello file e cartella** — le normali **ACL NTFS**, impostate da un client che ha montato la share",
+ "esempio": "Vuoi che il reparto Marketing monti la share e che dentro solo i responsabili scrivano in `\\Budget`. Al gruppo Marketing dai il ruolo *SMB Share Contributor*; sulla cartella Budget metti una ACL NTFS che lascia scrivere ai soli responsabili.",
+ "esame": "Azure RBAC **non** si può applicare dentro la share: il permesso su una singola cartella è sempre una ACL NTFS. E l'autenticazione a identità vale per **SMB**, non per NFS.",
+ "learn": "https://learn.microsoft.com/it-it/azure/storage/files/storage-files-active-directory-overview"
+}
+]
