@@ -272,8 +272,23 @@ def confronta(EN, IT):
         if not it:
             P("allineamento: id assente nella banca IT", q["id"])
             continue
-        for c in ("tipo", "dominio", "sotto_argomento", "risposta_corretta",
-                  "stato", "difficolta", "url_riferimento", "is_generated"):
+        chiavi = ["tipo", "dominio", "sotto_argomento", "risposta_corretta",
+                  "stato", "difficolta", "url_riferimento", "is_generated"]
+        # Nelle hotspot la chiave contiene i VALORI dei menu, non le lettere:
+        # se le scelte sono tradotte la chiave italiana deve seguirle, quindi
+        # divergere e' corretto. Che si risolva davvero lo verifica l'audit per
+        # banca qui sopra; qui basta accertarsi che non sia rimasta indietro.
+        if q.get("tipo") == "hotspot":
+            chiavi.remove("risposta_corretta")
+            if it.get("risposta_corretta") == q.get("risposta_corretta"):
+                menu_it = hotspot_menu(it)
+                tradotto = any(
+                    ch_it and ch_en and [norm(x) for x in ch_it] != [norm(x) for x in ch_en]
+                    for (_, _, ch_en), (_, _, ch_it) in zip(hotspot_menu(q), menu_it))
+                if tradotto:
+                    P("allineamento: chiave hotspot IT non segue le scelte tradotte", q["id"],
+                      "rilancia chiavi_hotspot_it.py")
+        for c in chiavi:
             if str(q.get(c)) != str(it.get(c)):
                 P("allineamento: campo tecnico divergente", q["id"],
                   f"{c}: EN={q.get(c)!r} IT={it.get(c)!r}")

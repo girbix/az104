@@ -7,7 +7,7 @@ Materiale di studio per l'esame **AZ-104 (Microsoft Azure Administrator)**, alli
 
 | | |
 |---|---|
-| **532 domande** d'esame | con risposta, spiegazione e link alla pagina Microsoft Learn che la prova |
+| **591 domande** d'esame | con risposta, spiegazione e link alla pagina Microsoft Learn che la prova |
 | **522 flashcard** | definizioni, limiti, comandi, differenze insidiose — tutti e cinque i domini |
 | **Simulatore** | 50 domande in 100 minuti, estrazione pesata per dominio, soglia 700/1000 |
 
@@ -17,8 +17,8 @@ Tutto in italiano, con nomi di servizi e termini tecnici in inglese come all'esa
 
 ## ⚠️ Leggi prima di usarla: la verifica è incompleta
 
-**Solo 30 domande su 532** sono state ricontrollate contro Microsoft Learn da un
-verificatore indipendente. Le altre **502 sono in stato `da_rivedere`**: sono state scritte
+**Solo 30 domande su 591** sono state ricontrollate contro Microsoft Learn da un
+verificatore indipendente. Le altre **561 sono in stato `da_rivedere`**: sono state scritte
 consultando la documentazione e ognuna cita una pagina Learn specifica, ma **nessuno ha
 ricontrollato la chiave di risposta in modo indipendente**.
 
@@ -58,7 +58,7 @@ mazzo, separatore, HTML e tag da sole.
 | `az104_flashcard_03_compute.csv` | 125 flashcard atomiche | `AZ104::03 Compute` |
 | `az104_flashcard_04_networking.csv` | 111 flashcard atomiche | `AZ104::04 Networking` |
 | `az104_flashcard_05_monitoraggio.csv` | 101 flashcard atomiche | `AZ104::05 Monitoraggio` |
-| `az104_domande_esame.csv` | 532 domande d'esame | `AZ104::Domande::01…05` |
+| `az104_domande_esame.csv` | 591 domande d'esame | `AZ104::Domande::01…05` |
 
 **Filtra con i tag** nella ricerca di Anki:
 
@@ -66,7 +66,7 @@ mazzo, separatore, HTML e tag da sole.
 |---|---|
 | `tag:domande tag:hotspot` | solo le hotspot |
 | `tag:networking tag:scenario` | scenari di rete |
-| `tag:da-rivedere` | le 502 con risposta non verificata |
+| `tag:da-rivedere` | le 561 con risposta non verificata |
 | `tag:verificata` | le 30 sicure |
 | `deck:AZ104::Domande::03*` | tutto il Compute |
 
@@ -80,16 +80,19 @@ difficoltà (`base` `applicativa` `scenario`), stato (`verificata` `da-rivedere`
 
 | Dominio | Domande | % | Peso ufficiale |
 |---|---:|---:|---|
-| Manage Azure identities and governance | 125 | 23,5% | 20–25% ✓ |
-| Implement and manage storage | 99 | 18,6% | 15–20% ✓ |
-| Deploy and manage Azure compute resources | 133 | 25,0% | 20–25% ✓ |
-| Implement and manage virtual networking | 100 | 18,8% | 15–20% ✓ |
-| Monitor and maintain Azure resources | 75 | 14,1% | 10–15% ✓ |
+| Manage Azure identities and governance | 138 | 23,4% | 20–25% ✓ |
+| Implement and manage storage | 112 | 19,0% | 15–20% ✓ |
+| Deploy and manage Azure compute resources | 147 | 24,9% | 20–25% ✓ |
+| Implement and manage virtual networking | 108 | 18,3% | 15–20% ✓ |
+| Monitor and maintain Azure resources | 86 | 14,6% | 10–15% ✓ |
 
-**Tipi:** 253 scelta singola · 92 hotspot · 88 scelta multipla · 63 serie Sì/No · 21 drag-and-drop
+Tutti e **82 gli obiettivi** della study guide hanno almeno 4 domande: nessuno scoperto.
+
+**Tipi:** 290 scelta singola · 99 hotspot · 94 scelta multipla · 71 serie Sì/No · 22 drag-and-drop
 · 15 case study
-**Difficoltà:** 126 base · 274 applicativa · 132 scenario
-**Sotto-argomenti:** 85 distinti — sono la granularità con cui il simulatore ti dice cosa ripassare.
+**Difficoltà:** 126 base · 297 applicativa · 168 scenario
+**Sotto-argomenti:** gli 82 obiettivi ufficiali, nomi identici alla study guide — sono la
+granularità con cui il simulatore ti dice cosa ripassare.
 
 Le 522 flashcard coprono tutti e cinque i domini: 76 identità · 109 storage · 125 compute
 · 111 networking · 101 monitoraggio.
@@ -141,6 +144,24 @@ prompt/             il prompt che ha generato la banca
 
 ### Rigenerare
 
+Per aggiungere domande: scrivi un lotto in `banca/sorgenti/nuove/`, con inglese e italiano nello
+stesso record (`domanda` e `domanda_it`), poi:
+
+```bash
+cd build
+python aggiungi_domande.py --scrivi   # id in coda, mai riusati, e sdoppia EN/IT
+python chiavi_hotspot_it.py --scrivi  # riallinea le chiavi hotspot alle scelte tradotte
+python build_pagine.py                # reinietta la banca in simulatore.html e ripasso.html
+```
+
+`sotto_argomento` non è testo libero: deve essere uno degli 82 obiettivi in
+[`build/tassonomia.py`](build/tassonomia.py), altrimenti `aggiungi_domande.py` rifiuta il lotto.
+È la chiave con cui il simulatore dice cosa ripassare, e due nomi per lo stesso obiettivo
+spezzerebbero in due la categoria. `allinea_tassonomia.py` riporta alla forma ufficiale le
+etichette vecchie.
+
+Ricostruzione completa dai lotti sorgente:
+
 ```bash
 cd build
 python assemble.py "<out>"          # banca inglese dai lotti sorgente
@@ -171,8 +192,8 @@ sei formati di risposta.
 ### Cosa è stato verificato, e cosa no
 
 **Verificato:** le due banche confrontate campo per campo (0 errori, chiavi identiche byte per
-byte); la logica di valutazione estratta ed eseguita su entrambe (532/532 su ciascuna) e sui 544
-item dei lotti sorgente; il payload delle pagine (532/532, ogni risposta risale alla banca
+byte); la logica di valutazione estratta ed eseguita su entrambe (591/591 su ciascuna) e sui 544
+item dei lotti sorgente; il payload delle pagine (591/591, ogni risposta risale alla banca
 originale); i parametri della simulazione contro l'esame reale. Questi test hanno trovato due bug
 reali:
 
@@ -184,13 +205,12 @@ reali:
 Entrambi corretti e riverificati.
 
 Un controllo incrocia anche la chiave di risposta con quello che la spiegazione stessa dichiara
-("Correct: c", "Statement 2 - No", "Dropdown 1 - Premium"): su 532 domande non è emersa nessuna
-divergenza reale. Non è una verifica contro Learn, ma esclude le chiavi copiate storte.
+("Correct: c", "Statement 2 - No", "Dropdown 1 - Premium"): non è emersa nessuna divergenza reale. Non è una verifica contro Learn, ma esclude le chiavi copiate storte.
 
 **Non verificato:** le pagine non sono state aperte in un browser reale, né l'import in Anki.
-`test_widget.js` disegna tutti e 532 i widget su un DOM finto, quindi esclude le eccezioni che
+`test_widget.js` disegna tutti e 591 i widget su un DOM finto, quindi esclude le eccezioni che
 lasciano la pagina bianca — ma non dice niente su come vengono impaginati davvero.
-E soprattutto: **502 risposte su 532 non hanno una verifica indipendente**.
+E soprattutto: **561 risposte su 591 non hanno una verifica indipendente**.
 
 ---
 
