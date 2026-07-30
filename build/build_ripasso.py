@@ -133,14 +133,7 @@ def compatta(q, problemi):
             problemi.append(f"{q['id']}: hotspot risolto solo per contenuto, ricontrollare")
         out["o"] = menu
     elif tipo == "yes_no_series":
-        # La pagina confronta il verdetto con "Yes" come stringa esatta: una
-        # chiave scritta "yes" si disegnerebbe muta come NO. Si normalizza qui,
-        # cosi' il caso della banca non puo' cambiare quello che si vede.
-        grezzi = [v.strip() for v in risposta.split(",") if v.strip()]
-        estranei = [v for v in grezzi if v.lower() not in ("yes", "no")]
-        if estranei:
-            problemi.append(f"{q['id']}: verdetti non Si/No -> {estranei}")
-        valori = ["Yes" if v.lower() == "yes" else "No" for v in grezzi]
+        valori = [v.strip() for v in risposta.split(",")]
         if len(valori) != len(opzioni):
             problemi.append(
                 f"{q['id']}: {len(opzioni)} affermazioni ma {len(valori)} risposte"

@@ -1,0 +1,312 @@
+{
+ "total": 532,
+ "by_domain": {
+  "Manage Azure identities and governance": 125,
+  "Implement and manage storage": 99,
+  "Deploy and manage Azure compute resources": 133,
+  "Implement and manage virtual networking": 100,
+  "Monitor and maintain Azure resources": 75
+ },
+ "by_stato": {
+  "da_rivedere": 502,
+  "verificata": 30
+ },
+ "by_tipo": {
+  "hotspot": 92,
+  "yes_no_series": 63,
+  "multiple_choice": 253,
+  "multiple_response": 88,
+  "case_study": 15,
+  "drag_drop": 21
+ },
+ "by_difficolta": {
+  "2": 274,
+  "3": 132,
+  "1": 126
+ },
+ "by_fonte": {
+  "Generated (Microsoft Learn-anchored)": 532
+ },
+ "by_origine": {
+  "originale generata": 532
+ },
+ "removed": {
+  "obsoleta": 1,
+  "eccedenza peso dominio": 11
+ },
+ "removed_total": 12,
+ "by_subtopic": {
+  "Manage Azure identities and governance :: Apply and manage tags on resources": 5,
+  "Manage Azure identities and governance :: Configure cost management": 4,
+  "Manage Azure identities and governance :: Configure management groups": 4,
+  "Manage Azure identities and governance :: Configure resource locks": 8,
+  "Manage Azure identities and governance :: Configure self-service password reset (SSPR)": 9,
+  "Manage Azure identities and governance :: Create custom role definitions": 2,
+  "Manage Azure identities and governance :: Create custom role-based access control (RBAC) roles, including Azure roles and Microsoft Entra roles": 4,
+  "Manage Azure identities and governance :: Create users and groups": 11,
+  "Manage Azure identities and governance :: Create, configure, and manage groups": 1,
+  "Manage Azure identities and governance :: Create, configure, and manage users": 5,
+  "Manage Azure identities and governance :: Implement and manage Azure Policy": 14,
+  "Manage Azure identities and governance :: Interpret access assignments": 25,
+  "Manage Azure identities and governance :: Manage external users": 7,
+  "Manage Azure identities and governance :: Manage licenses in Microsoft Entra ID": 9,
+  "Manage Azure identities and governance :: Manage resource groups": 4,
+  "Manage Azure identities and governance :: Manage subscriptions": 1,
+  "Manage Azure identities and governance :: Manage user and group properties": 3,
+  "Manage Azure identities and governance :: Provide access to Azure resources by assigning roles at different scopes": 9,
+  "Implement and manage storage :: Configure Azure Storage firewalls and virtual networks": 11,
+  "Implement and manage storage :: Configure Azure Storage redundancy": 13,
+  "Implement and manage storage :: Configure blob lifecycle management": 4,
+  "Implement and manage storage :: Configure blob versioning": 2,
+  "Implement and manage storage :: Configure identity-based access for Azure Files": 3,
+  "Implement and manage storage :: Configure object replication": 7,
+  "Implement and manage storage :: Configure snapshots and soft delete for Azure Files": 6,
+  "Implement and manage storage :: Configure soft delete for blobs and containers": 4,
+  "Implement and manage storage :: Configure storage account encryption": 6,
+  "Implement and manage storage :: Configure storage tiers": 5,
+  "Implement and manage storage :: Configure stored access policies": 6,
+  "Implement and manage storage :: Create and configure a container": 1,
+  "Implement and manage storage :: Create and configure a file share in Azure Files": 10,
+  "Implement and manage storage :: Create and configure storage accounts": 3,
+  "Implement and manage storage :: Create and use shared access signature (SAS) tokens": 8,
+  "Implement and manage storage :: Manage access keys": 7,
+  "Implement and manage storage :: Manage data by using Azure Storage Explorer and AzCopy": 3,
+  "Deploy and manage Azure compute resources :: Configure Azure Disk Encryption": 5,
+  "Deploy and manage Azure compute resources :: Configure backup for an App Service": 2,
+  "Deploy and manage Azure compute resources :: Configure certificates and Transport Layer Security (TLS) for an App Service": 2,
+  "Deploy and manage Azure compute resources :: Configure deployment slots": 3,
+  "Deploy and manage Azure compute resources :: Configure networking settings for an App Service": 3,
+  "Deploy and manage Azure compute resources :: Configure scaling for an App Service plan": 7,
+  "Deploy and manage Azure compute resources :: Create a virtual machine": 5,
+  "Deploy and manage Azure compute resources :: Create and manage an Azure container registry": 14,
+  "Deploy and manage Azure compute resources :: Deploy a resource by using an ARM template or Bicep file": 7,
+  "Deploy and manage Azure compute resources :: Deploy and configure an Azure Virtual Machine Scale Set": 11,
+  "Deploy and manage Azure compute resources :: Deploy resources by using an Azure Resource Manager template or a Bicep file": 4,
+  "Deploy and manage Azure compute resources :: Deploy virtual machines to availability zones and availability sets": 6,
+  "Deploy and manage Azure compute resources :: Export a deployment as an Azure Resource Manager template or convert an Azure Resource Manager template to a Bicep file": 4,
+  "Deploy and manage Azure compute resources :: Interpret an ARM template or Bicep file": 6,
+  "Deploy and manage Azure compute resources :: Manage sizing and scaling for containers, including Azure Container Instances and Azure Container Apps": 3,
+  "Deploy and manage Azure compute resources :: Manage virtual machine disks": 8,
+  "Deploy and manage Azure compute resources :: Manage virtual machine sizes": 8,
+  "Deploy and manage Azure compute resources :: Map an existing custom DNS name to an App Service": 3,
+  "Deploy and manage Azure compute resources :: Modify an existing ARM template": 2,
+  "Deploy and manage Azure compute resources :: Modify an existing Bicep file": 5,
+  "Deploy and manage Azure compute resources :: Move a virtual machine to another resource group, subscription, or region": 10,
+  "Deploy and manage Azure compute resources :: Provision a container using Azure Container Apps": 5,
+  "Deploy and manage Azure compute resources :: Provision a container using Azure Container Instances": 5,
+  "Deploy and manage Azure compute resources :: Provision an App Service plan": 5,
+  "Implement and manage virtual networking :: Configure Azure DNS": 14,
+  "Implement and manage virtual networking :: Configure an internal or public load balancer": 10,
+  "Implement and manage virtual networking :: Configure private endpoints for PaaS": 7,
+  "Implement and manage virtual networking :: Configure public IP addresses": 7,
+  "Implement and manage virtual networking :: Configure service endpoints for PaaS": 3,
+  "Implement and manage virtual networking :: Configure user-defined network routes": 6,
+  "Implement and manage virtual networking :: Create and configure network security groups (NSGs) and application security groups (ASGs)": 13,
+  "Implement and manage virtual networking :: Create and configure virtual network peering": 7,
+  "Implement and manage virtual networking :: Create and configure virtual networks and subnets": 11,
+  "Implement and manage virtual networking :: Evaluate effective security rules in NSGs": 5,
+  "Implement and manage virtual networking :: Implement Azure Bastion": 8,
+  "Implement and manage virtual networking :: Troubleshoot load balancing": 4,
+  "Implement and manage virtual networking :: Troubleshoot network connectivity": 5,
+  "Monitor and maintain Azure resources :: Configure Azure Site Recovery for Azure resources": 1,
+  "Monitor and maintain Azure resources :: Configure and interpret monitoring of virtual machines, storage accounts, and networks by using Azure Monitor Insights": 2,
+  "Monitor and maintain Azure resources :: Configure and interpret reports and alerts for backups": 2,
+  "Monitor and maintain Azure resources :: Configure log settings in Azure Monitor": 8,
+  "Monitor and maintain Azure resources :: Create a Recovery Services vault": 7,
+  "Monitor and maintain Azure resources :: Create an Azure Backup vault": 2,
+  "Monitor and maintain Azure resources :: Create and configure a backup policy": 5,
+  "Monitor and maintain Azure resources :: Interpret metrics in Azure Monitor": 6,
+  "Monitor and maintain Azure resources :: Perform a failover to a secondary region": 2,
+  "Monitor and maintain Azure resources :: Perform backup and restore operations by using Azure Backup": 6,
+  "Monitor and maintain Azure resources :: Query and analyze logs in Azure Monitor": 13,
+  "Monitor and maintain Azure resources :: Set up alert rules, action groups, and alert processing rules in Azure Monitor": 13,
+  "Monitor and maintain Azure resources :: Use Azure Network Watcher and Connection monitor": 8
+ },
+ "load_report": [
+  {
+   "batch": "CMP-A",
+   "n": 16,
+   "status": "ok"
+  },
+  {
+   "batch": "CMP-B",
+   "n": 16,
+   "status": "ok"
+  },
+  {
+   "batch": "CMP-C",
+   "n": 15,
+   "status": "ok"
+  },
+  {
+   "batch": "CMP-D",
+   "n": 15,
+   "status": "ok"
+  },
+  {
+   "batch": "CMP-E",
+   "n": 15,
+   "status": "ok"
+  },
+  {
+   "batch": "CMP-F",
+   "n": 14,
+   "status": "ok"
+  },
+  {
+   "batch": "CMP-G",
+   "n": 14,
+   "status": "ok"
+  },
+  {
+   "batch": "CMP-H",
+   "n": 13,
+   "status": "ok"
+  },
+  {
+   "batch": "CMP-I",
+   "n": 13,
+   "status": "ok"
+  },
+  {
+   "batch": "CMP-J",
+   "n": 13,
+   "status": "ok"
+  },
+  {
+   "batch": "IDG-A",
+   "n": 15,
+   "status": "ok"
+  },
+  {
+   "batch": "IDG-B",
+   "n": 15,
+   "status": "ok"
+  },
+  {
+   "batch": "IDG-C",
+   "n": 15,
+   "status": "ok"
+  },
+  {
+   "batch": "IDG-D",
+   "n": 14,
+   "status": "ok"
+  },
+  {
+   "batch": "IDG-E",
+   "n": 13,
+   "status": "ok"
+  },
+  {
+   "batch": "IDG-F",
+   "n": 13,
+   "status": "ok"
+  },
+  {
+   "batch": "IDG-G",
+   "n": 14,
+   "status": "ok"
+  },
+  {
+   "batch": "IDG-H",
+   "n": 13,
+   "status": "ok"
+  },
+  {
+   "batch": "IDG-I",
+   "n": 13,
+   "status": "ok"
+  },
+  {
+   "batch": "MON-A",
+   "n": 14,
+   "status": "ok"
+  },
+  {
+   "batch": "MON-B",
+   "n": 13,
+   "status": "ok"
+  },
+  {
+   "batch": "MON-C",
+   "n": 13,
+   "status": "ok"
+  },
+  {
+   "batch": "MON-D",
+   "n": 10,
+   "status": "ok"
+  },
+  {
+   "batch": "MON-E",
+   "n": 13,
+   "status": "ok"
+  },
+  {
+   "batch": "MON-F",
+   "n": 12,
+   "status": "ok"
+  },
+  {
+   "batch": "NET-A",
+   "n": 18,
+   "status": "ok"
+  },
+  {
+   "batch": "NET-B",
+   "n": 18,
+   "status": "ok"
+  },
+  {
+   "batch": "NET-C",
+   "n": 18,
+   "status": "ok"
+  },
+  {
+   "batch": "NET-D",
+   "n": 18,
+   "status": "ok"
+  },
+  {
+   "batch": "NET-E",
+   "n": 14,
+   "status": "ok"
+  },
+  {
+   "batch": "NET-F",
+   "n": 14,
+   "status": "ok"
+  },
+  {
+   "batch": "STO-A",
+   "n": 18,
+   "status": "ok"
+  },
+  {
+   "batch": "STO-B",
+   "n": 17,
+   "status": "ok"
+  },
+  {
+   "batch": "STO-C",
+   "n": 17,
+   "status": "ok"
+  },
+  {
+   "batch": "STO-D",
+   "n": 16,
+   "status": "ok"
+  },
+  {
+   "batch": "STO-E",
+   "n": 16,
+   "status": "ok"
+  },
+  {
+   "batch": "STO-F",
+   "n": 16,
+   "status": "ok"
+  }
+ ]
+}

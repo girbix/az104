@@ -3,8 +3,7 @@
    correct, is that answer even selectable in the UI, and does a wrong answer fail? */
 const fs = require("fs"), path = require("path"), vm = require("vm");
 
-/* Le pagine stanno nella radice del repo, gli script qui dentro in build/. */
-const BASE = path.resolve(__dirname, "..");
+const BASE = __dirname;
 const html = fs.readFileSync(path.join(BASE, "simulatore.html"), "utf8");
 
 const start = html.indexOf("/* ============================================================ answer logic */");
@@ -20,13 +19,11 @@ vm.runInContext(
   "\nglobalThis.__api = {grade, hotspotKeys, optionsOf, parseHotspot, norm, splitAns};", ctx);
 const { grade, hotspotKeys, optionsOf, parseHotspot, norm, splitAns } = ctx.__api;
 
-/* I lotti sorgente in inglese, prima dell'assemblaggio. */
-const LOTTI = path.join(BASE, "banca", "sorgenti", "domande-en");
-const files = fs.readdirSync(LOTTI).filter(f => f.endsWith(".json"));
+const files = fs.readdirSync(path.join(BASE, "batches")).filter(f => f.endsWith(".json"));
 let all = [];
 for (const f of files) {
   try {
-    const d = JSON.parse(fs.readFileSync(path.join(LOTTI, f), "utf8"));
+    const d = JSON.parse(fs.readFileSync(path.join(BASE, "batches", f), "utf8"));
     if (Array.isArray(d)) d.forEach(q => { q._f = f; all.push(q); });
   } catch (e) { console.log("PARSE FAIL", f, e.message); }
 }
@@ -40,12 +37,7 @@ function correctAnswerFor(q) {
   switch (q.tipo) {
     case "multiple_response": return splitAns(q.risposta_corretta);
     case "yes_no_series": return splitAns(q.risposta_corretta).map(v => v === "yes" ? "Yes" : "No");
-    /* Il widget tiene sempre in stato l'elenco completo: le azioni richieste
-       in testa, i distrattori sotto la linea. */
-    case "drag_drop": {
-      const key = splitAns(q.risposta_corretta);
-      return [...key, ...opts.map(o => o.key).filter(k => !key.includes(k))];
-    }
+    case "drag_drop": return splitAns(q.risposta_corretta);
     case "hotspot": {
       const want = hotspotKeys(q);
       const specs = opts.map(o => parseHotspot(o.text));
@@ -68,11 +60,7 @@ function wrongAnswerFor(q) {
       return other.length ? [other[0]] : [key[0]];
     }
     case "yes_no_series": return splitAns(q.risposta_corretta).map(v => v === "yes" ? "No" : "Yes");
-    case "drag_drop": {
-      const key = splitAns(q.risposta_corretta);
-      const full = [...key, ...opts.map(o => o.key).filter(k => !key.includes(k))];
-      return full.length > 1 ? [full[1], full[0], ...full.slice(2)] : full;
-    }
+    case "drag_drop": { const k = splitAns(q.risposta_corretta).slice(); return k.length > 1 ? [k[1], k[0], ...k.slice(2)] : k; }
     case "hotspot": {
       const specs = opts.map(o => parseHotspot(o.text));
       const want = hotspotKeys(q);
