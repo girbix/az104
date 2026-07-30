@@ -101,7 +101,6 @@
     font-family: var(--sans);
     font-size: var(--step-0);
     line-height: 1.55;
-    -webkit-text-size-adjust: 100%;
   }
 
   :focus-visible {
@@ -119,6 +118,7 @@
     top: 0;
     z-index: 20;
     background: color-mix(in srgb, var(--surface) 92%, transparent);
+    -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--line);
   }
@@ -362,7 +362,7 @@
     margin: 0 0 14px;
     font-size: var(--step-1);
     line-height: 1.5;
-    text-wrap: pretty;
+    overflow-wrap: anywhere;
   }
 
   .opts {
@@ -548,7 +548,7 @@
     font-size: var(--step--1);
     line-height: 1.62;
     color: var(--ink-2);
-    text-wrap: pretty;
+    overflow-wrap: anywhere;
   }
 
   .src {
@@ -588,6 +588,7 @@
     bottom: 0;
     z-index: 20;
     background: color-mix(in srgb, var(--surface) 94%, transparent);
+    -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
     border-top: 1px solid var(--line);
     padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
