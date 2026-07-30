@@ -1,0 +1,1106 @@
+<title>AZ-104 — Ripasso</title>
+
+<style>
+  :root {
+    --ground: #f6f8f9;
+    --surface: #ffffff;
+    --surface-2: #eef2f4;
+    --line: #dae2e6;
+    --line-strong: #c2ced4;
+    --ink: #14202a;
+    --ink-2: #4f606d;
+    --ink-3: #86949e;
+    --accent: #0f6e8c;
+    --accent-ink: #ffffff;
+    --accent-soft: #e0eff3;
+    --ok: #2c7a58;
+    --ok-soft: #e0f0e8;
+    --warn: #9c5c12;
+    --warn-soft: #f9ecd9;
+    --bad: #a53f3c;
+    --shadow: 0 1px 2px rgba(20, 32, 42, .06), 0 8px 24px -12px rgba(20, 32, 42, .18);
+
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", "Roboto Mono", "SF Mono", Menlo, Consolas, monospace;
+
+    --step--1: .78rem;
+    --step-0: .95rem;
+    --step-1: 1.08rem;
+    --step-2: 1.3rem;
+    --tap: 44px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #0d1417;
+      --surface: #151e23;
+      --surface-2: #1c272d;
+      --line: #2a373f;
+      --line-strong: #3c4d57;
+      --ink: #dbe4e9;
+      --ink-2: #93a3ad;
+      --ink-3: #6a7982;
+      --accent: #56b9d6;
+      --accent-ink: #06222c;
+      --accent-soft: #16323d;
+      --ok: #5cc08c;
+      --ok-soft: #142f24;
+      --warn: #d99a3f;
+      --warn-soft: #33270f;
+      --bad: #e78a86;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -12px rgba(0, 0, 0, .7);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0d1417;
+    --surface: #151e23;
+    --surface-2: #1c272d;
+    --line: #2a373f;
+    --line-strong: #3c4d57;
+    --ink: #dbe4e9;
+    --ink-2: #93a3ad;
+    --ink-3: #6a7982;
+    --accent: #56b9d6;
+    --accent-ink: #06222c;
+    --accent-soft: #16323d;
+    --ok: #5cc08c;
+    --ok-soft: #142f24;
+    --warn: #d99a3f;
+    --warn-soft: #33270f;
+    --bad: #e78a86;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -12px rgba(0, 0, 0, .7);
+  }
+
+  :root[data-theme="light"] {
+    --ground: #f6f8f9;
+    --surface: #ffffff;
+    --surface-2: #eef2f4;
+    --line: #dae2e6;
+    --line-strong: #c2ced4;
+    --ink: #14202a;
+    --ink-2: #4f606d;
+    --ink-3: #86949e;
+    --accent: #0f6e8c;
+    --accent-ink: #ffffff;
+    --accent-soft: #e0eff3;
+    --ok: #2c7a58;
+    --ok-soft: #e0f0e8;
+    --warn: #9c5c12;
+    --warn-soft: #f9ecd9;
+    --bad: #a53f3c;
+    --shadow: 0 1px 2px rgba(20, 32, 42, .06), 0 8px 24px -12px rgba(20, 32, 42, .18);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: var(--step-0);
+    line-height: 1.55;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  button { font: inherit; color: inherit; cursor: pointer; }
+
+  /* ---------- intestazione ---------- */
+
+  .top {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .top-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .brand {
+    font-family: var(--mono);
+    font-size: var(--step--1);
+    font-weight: 700;
+    letter-spacing: .04em;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  .counter {
+    font-family: var(--mono);
+    font-size: var(--step--1);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-2);
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  .icon-btn {
+    display: grid;
+    place-items: center;
+    min-width: var(--tap);
+    min-height: 36px;
+    padding: 0 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: var(--step--1);
+    color: var(--ink-2);
+  }
+
+  .icon-btn[aria-pressed="true"] {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .rail {
+    height: 3px;
+    background: var(--surface-2);
+    overflow: hidden;
+  }
+
+  .rail-fill {
+    height: 100%;
+    width: 0;
+    background: var(--accent);
+    transition: width .25s ease;
+  }
+
+  /* ---------- pannello filtri ---------- */
+
+  .filters {
+    display: none;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 4px 12px 14px;
+    border-top: 1px solid var(--line);
+  }
+
+  .filters.open { display: block; }
+
+  .search {
+    width: 100%;
+    min-height: var(--tap);
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--ink);
+    font: inherit;
+  }
+
+  .search::placeholder { color: var(--ink-3); }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 6px;
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .chip {
+    min-height: 34px;
+    padding: 4px 11px;
+    background: transparent;
+    border: 1px solid var(--line-strong);
+    border-radius: 17px;
+    font-size: var(--step--1);
+    color: var(--ink-2);
+    transition: background .12s ease, border-color .12s ease, color .12s ease;
+  }
+
+  .chip[aria-pressed="true"] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+    font-weight: 600;
+  }
+
+  .chip .n {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    opacity: .65;
+    margin-left: 5px;
+  }
+
+  .filters-foot {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-top: 4px;
+  }
+
+  .link-btn {
+    min-height: 34px;
+    padding: 4px 10px;
+    background: none;
+    border: 1px dashed var(--line-strong);
+    border-radius: 8px;
+    font-size: var(--step--1);
+    color: var(--ink-2);
+  }
+
+  /* ---------- avviso verifica ---------- */
+
+  .notice {
+    max-width: 720px;
+    margin: 12px auto 0;
+    padding: 10px 12px;
+    background: var(--warn-soft);
+    border-left: 3px solid var(--warn);
+    border-radius: 0 8px 8px 0;
+    font-size: var(--step--1);
+    color: var(--ink-2);
+  }
+
+  .notice strong { color: var(--ink); }
+
+  .notice button {
+    background: none;
+    border: 0;
+    padding: 0;
+    margin-left: 4px;
+    color: var(--warn);
+    font-weight: 600;
+    text-decoration: underline;
+  }
+
+  /* ---------- card ---------- */
+
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 12px 12px 96px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .card-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 10px 14px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .qid {
+    font-family: var(--mono);
+    font-size: var(--step--1);
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .tag {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: .68rem;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    background: var(--ground);
+    border: 1px solid var(--line);
+    color: var(--ink-2);
+  }
+
+  .tag-check {
+    margin-left: auto;
+    border-color: transparent;
+  }
+
+  .tag-check.unver { background: var(--warn-soft); color: var(--warn); }
+  .tag-check.ver { background: var(--ok-soft); color: var(--ok); }
+
+  .card-body { padding: 14px; }
+
+  .dom {
+    font-family: var(--mono);
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 8px;
+  }
+
+  .q {
+    margin: 0 0 14px;
+    font-size: var(--step-1);
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
+
+  .opts {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin: 0 0 14px;
+    padding: 0;
+  }
+
+  .opt {
+    display: flex;
+    gap: 9px;
+    padding: 9px 11px;
+    background: var(--ground);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-size: var(--step-0);
+  }
+
+  .opt .k {
+    flex: none;
+    font-family: var(--mono);
+    font-weight: 700;
+    color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .revealed .opt.hit {
+    background: var(--ok-soft);
+    border-color: var(--ok);
+  }
+
+  .revealed .opt.hit .k { color: var(--ok); }
+
+  .revealed .opt.miss { opacity: .5; }
+
+  /* hotspot */
+
+  .menu {
+    padding: 10px 11px;
+    background: var(--ground);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    margin-bottom: 7px;
+  }
+
+  .menu-l {
+    display: block;
+    font-size: var(--step--1);
+    color: var(--ink-2);
+    margin-bottom: 7px;
+  }
+
+  .menu-c {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  .val {
+    padding: 3px 9px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font-size: var(--step--1);
+    color: var(--ink-2);
+  }
+
+  .revealed .val.hit {
+    background: var(--ok-soft);
+    border-color: var(--ok);
+    color: var(--ok);
+    font-weight: 600;
+  }
+
+  .revealed .val.miss { opacity: .42; }
+
+  /* sì/no + ordinamento */
+
+  .verdict {
+    flex: none;
+    align-self: flex-start;
+    padding: 1px 8px;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: .7rem;
+    font-weight: 700;
+    border: 1px solid var(--line);
+    color: var(--ink-3);
+    background: var(--surface);
+  }
+
+  .revealed .verdict.yes { background: var(--ok-soft); border-color: var(--ok); color: var(--ok); }
+  .revealed .verdict.no { background: var(--surface-2); border-color: var(--line-strong); color: var(--ink-2); }
+  .revealed .verdict.hidden-v { visibility: hidden; }
+
+  .ord {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: .72rem;
+    font-weight: 700;
+    color: var(--ink-3);
+  }
+
+  .ord .post { display: none; }
+
+  .revealed .ord {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .revealed .ord .pre { display: none; }
+  .revealed .ord .post { display: block; }
+
+  .revealed .opt.miss .ord {
+    background: var(--surface-2);
+    border-color: var(--line);
+    color: var(--ink-3);
+  }
+
+  /* La sequenza si ricompone solo al reveal. */
+  .revealed .opt { order: var(--o, 0); }
+
+  /* ---------- risposta ---------- */
+
+  .reveal-btn {
+    width: 100%;
+    min-height: var(--tap);
+    background: var(--accent);
+    border: 0;
+    border-radius: 9px;
+    color: var(--accent-ink);
+    font-weight: 600;
+    letter-spacing: .01em;
+  }
+
+  .answer { display: none; }
+  .revealed .answer { display: block; }
+  .revealed .reveal-btn { display: none; }
+
+  .answer-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding-top: 14px;
+    margin-top: 4px;
+    border-top: 1px solid var(--line);
+  }
+
+  .answer-l {
+    font-family: var(--mono);
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .answer-v {
+    font-family: var(--mono);
+    font-size: var(--step-1);
+    font-weight: 700;
+    color: var(--ok);
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+  }
+
+  .why {
+    margin: 10px 0 0;
+    padding: 12px;
+    background: var(--ground);
+    border-radius: 8px;
+    font-size: var(--step--1);
+    line-height: 1.62;
+    color: var(--ink-2);
+    text-wrap: pretty;
+  }
+
+  .src {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 38px;
+    margin-top: 10px;
+    font-family: var(--mono);
+    font-size: var(--step--1);
+    color: var(--accent);
+    overflow-wrap: anywhere;
+  }
+
+  .kws {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 12px;
+  }
+
+  .kw {
+    padding: 2px 7px;
+    background: var(--surface-2);
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: .68rem;
+    color: var(--ink-3);
+  }
+
+  /* ---------- barra azioni ---------- */
+
+  .dock {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--line);
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+  }
+
+  .dock-in {
+    display: flex;
+    gap: 8px;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .nav {
+    flex: none;
+    width: 46px;
+    min-height: var(--tap);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    font-size: 1.1rem;
+    color: var(--ink-2);
+  }
+
+  .nav:disabled { opacity: .35; cursor: default; }
+
+  .mark {
+    flex: 1;
+    min-height: var(--tap);
+    border-radius: 9px;
+    border: 1px solid var(--line-strong);
+    background: var(--surface-2);
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--ink-2);
+  }
+
+  .mark-ok[aria-pressed="true"] {
+    background: var(--ok-soft);
+    border-color: var(--ok);
+    color: var(--ok);
+  }
+
+  .mark-rev[aria-pressed="true"] {
+    background: var(--warn-soft);
+    border-color: var(--warn);
+    color: var(--warn);
+  }
+
+  .empty {
+    padding: 48px 16px;
+    text-align: center;
+    color: var(--ink-3);
+  }
+
+  .empty p { margin: 0 0 14px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+  @media (min-width: 700px) {
+    :root { --step-0: 1rem; --step-1: 1.15rem; }
+    main { padding-bottom: 110px; }
+  }
+</style>
+
+<header class="top">
+  <div class="top-row">
+    <span class="brand">AZ-104</span>
+    <button class="icon-btn" id="btn-filters" aria-pressed="false" aria-controls="filters">Filtri</button>
+    <button class="icon-btn" id="btn-shuffle" title="Mescola l'ordine">Mescola</button>
+    <span class="counter" id="counter">—</span>
+  </div>
+  <div class="rail"><div class="rail-fill" id="rail"></div></div>
+  <div class="filters" id="filters">
+    <input class="search" id="search" type="search" placeholder="Cerca nel testo, es. resource lock" autocomplete="off">
+    <p class="eyebrow">Dominio</p>
+    <div class="chips" id="f-dom"></div>
+    <p class="eyebrow">Tipo</p>
+    <div class="chips" id="f-tipo"></div>
+    <p class="eyebrow">Difficoltà</p>
+    <div class="chips" id="f-diff"></div>
+    <p class="eyebrow">I tuoi segni</p>
+    <div class="chips" id="f-mark"></div>
+    <div class="filters-foot">
+      <button class="link-btn" id="btn-reset">Azzera filtri</button>
+      <button class="link-btn" id="btn-export">Esporta segni</button>
+      <button class="link-btn" id="btn-wipe">Cancella progressi</button>
+      <button class="link-btn" id="btn-theme">Tema</button>
+    </div>
+  </div>
+</header>
+
+<div class="notice" id="notice" hidden>
+  <strong>502 domande su 532 non sono state ricontrollate.</strong>
+  Sono scritte sulla documentazione Microsoft Learn e ognuna cita la sua pagina, ma la chiave di
+  risposta non ha avuto una verifica indipendente. Se una risposta ti convince poco, apri il link
+  Learn in fondo alla card prima di darla per buona. Le 30 verificate hanno il bollino verde.
+  <button id="notice-x">Ho capito</button>
+</div>
+
+<main id="stage"></main>
+
+<nav class="dock">
+  <div class="dock-in">
+    <button class="nav" id="prev" aria-label="Domanda precedente">←</button>
+    <button class="mark mark-ok" id="mark-ok" aria-pressed="false">La sapevo</button>
+    <button class="mark mark-rev" id="mark-rev" aria-pressed="false">Da rivedere</button>
+    <button class="nav" id="next" aria-label="Domanda successiva">→</button>
+  </div>
+</nav>
+
+<script>
+  const BANCA = /*__DATI__*/[];
+
+  const DOMINI = {
+    1: "Identità e governance",
+    2: "Storage",
+    3: "Compute",
+    4: "Networking",
+    5: "Monitoraggio",
+  };
+  const TIPI = {
+    multiple_choice: "Scelta singola",
+    multiple_response: "Scelta multipla",
+    hotspot: "Hotspot",
+    yes_no_series: "Serie Sì/No",
+    drag_drop: "Ordinamento",
+    case_study: "Case study",
+  };
+  const DIFF = { 1: "Base", 2: "Applicativa", 3: "Scenario" };
+  const LETTERE = ["A", "B", "C", "D", "E"];
+
+  /* ---------- stato persistente ---------- */
+
+  const CHIAVE = "az104-ripasso-v1";
+  let memoriaVolatile = false;
+
+  function carica() {
+    try {
+      const raw = localStorage.getItem(CHIAVE);
+      return raw ? JSON.parse(raw) : {};
+    } catch (err) {
+      memoriaVolatile = true;
+      return {};
+    }
+  }
+
+  function salva() {
+    if (memoriaVolatile) return;
+    try {
+      localStorage.setItem(CHIAVE, JSON.stringify(segni));
+    } catch (err) {
+      memoriaVolatile = true;
+    }
+  }
+
+  // { "AZ104-0001": "ok" | "rev" }
+  let segni = carica();
+
+  const filtri = { dom: new Set(), tipo: new Set(), diff: new Set(), mark: new Set(), q: "" };
+  let ordine = BANCA.map((_, i) => i);
+  let vista = [];
+  let cursore = 0;
+  let mostrata = false;
+
+  /* ---------- filtro ---------- */
+
+  function passa(d) {
+    if (filtri.dom.size && !filtri.dom.has(d.d)) return false;
+    if (filtri.tipo.size && !filtri.tipo.has(d.t)) return false;
+    if (filtri.diff.size && !filtri.diff.has(d.df)) return false;
+    if (filtri.mark.size) {
+      const s = segni[d.id] || "new";
+      if (!filtri.mark.has(s)) return false;
+    }
+    if (filtri.q) {
+      const testo = (d.q + " " + d.e + " " + d.s + " " + d.tg.join(" ")).toLowerCase();
+      if (!testo.includes(filtri.q)) return false;
+    }
+    return true;
+  }
+
+  function ricalcola(tieniPosizione = true) {
+    const idCorrente = vista.length ? BANCA[vista[cursore]].id : null;
+    vista = ordine.filter((i) => passa(BANCA[i]));
+    if (tieniPosizione && idCorrente) {
+      const trovato = vista.findIndex((i) => BANCA[i].id === idCorrente);
+      cursore = trovato >= 0 ? trovato : 0;
+    } else {
+      cursore = 0;
+    }
+    disegna();
+  }
+
+  /* ---------- rendering ---------- */
+
+  const esc = (s) =>
+    String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  function opzioniHtml(d) {
+    if (d.t === "hotspot") {
+      return d.o
+        .map(
+          (m) => `<div class="menu">
+            <span class="menu-l">${esc(m.l)}</span>
+            <div class="menu-c">${m.c
+              .map((v) => `<span class="val ${v === m.k ? "hit" : "miss"}">${esc(v)}</span>`)
+              .join("")}</div>
+          </div>`
+        )
+        .join("");
+    }
+
+    if (d.t === "yes_no_series") {
+      return `<ul class="opts">${d.o
+        .map((o, i) => {
+          const v = d.a[i];
+          const si = v === "Yes";
+          const nota = v === undefined;
+          return `<li class="opt">
+            <span class="verdict ${nota ? "hidden-v" : si ? "yes" : "no"}">${nota ? "—" : si ? "SÌ" : "NO"}</span>
+            <span>${esc(o)}</span>
+          </li>`;
+        })
+        .join("")}</ul>`;
+    }
+
+    if (d.t === "drag_drop") {
+      // L'ordine arriva da --o, applicato solo sotto .revealed: prima del reveal
+      // le azioni restano in ordine alfabetico e non anticipano la sequenza.
+      // Una domanda può chiedere N azioni su più opzioni: le escluse sono distrattori.
+      return `<ul class="opts">${d.o
+        .map((o, i) => {
+          const p = d.a.indexOf("abcde"[i]);
+          const usata = p >= 0;
+          return `<li class="opt ${usata ? "" : "miss"}" style="--o:${usata ? p : 90 + i}">
+            <span class="ord">
+              <span class="pre">${LETTERE[i]}</span>
+              <span class="post">${usata ? p + 1 : "—"}</span>
+            </span>
+            <span>${esc(o)}</span>
+          </li>`;
+        })
+        .join("")}</ul>`;
+    }
+
+    return `<ul class="opts">${d.o
+      .map(
+        (o, i) => `<li class="opt ${d.a.includes("abcde"[i]) ? "hit" : "miss"}">
+          <span class="k">${LETTERE[i]}</span>
+          <span>${esc(o)}</span>
+        </li>`
+      )
+      .join("")}</ul>`;
+  }
+
+  function rispostaBreve(d) {
+    if (d.t === "hotspot") return d.o.map((m) => m.k || "?").join(" · ");
+    if (d.t === "yes_no_series") return d.a.map((v) => (v === "Yes" ? "SÌ" : "NO")).join(" · ");
+    if (d.t === "drag_drop") return d.a.map((l) => l.toUpperCase()).join(" → ");
+    return d.a.map((l) => l.toUpperCase()).join(" + ");
+  }
+
+  function disegna() {
+    const stage = document.getElementById("stage");
+
+    if (!vista.length) {
+      stage.innerHTML = `<div class="empty">
+        <p>Nessuna domanda con questi filtri.</p>
+        <button class="link-btn" onclick="document.getElementById('btn-reset').click()">Azzera i filtri</button>
+      </div>`;
+      document.getElementById("counter").textContent = "0 / 0";
+      document.getElementById("rail").style.width = "0%";
+      aggiornaDock(null);
+      return;
+    }
+
+    const d = BANCA[vista[cursore]];
+    const drag = d.t === "drag_drop";
+
+    stage.innerHTML = `<article class="card ${mostrata ? "revealed" : ""}" id="card">
+      <div class="card-head">
+        <span class="qid">${esc(d.id)}</span>
+        <span class="tag">${esc(TIPI[d.t] || d.t)}</span>
+        <span class="tag">${esc(DIFF[d.df])}</span>
+        <span class="tag tag-check ${d.v ? "ver" : "unver"}">${d.v ? "✓ verificata" : "da rivedere"}</span>
+      </div>
+      <div class="card-body">
+        <p class="dom">${esc(DOMINI[d.d])} — ${esc(d.s)}</p>
+        <p class="q">${esc(d.q)}</p>
+        ${drag && !mostrata ? '<p class="dom">Metti in ordine i passaggi, poi mostra la sequenza.</p>' : ""}
+        ${opzioniHtml(d)}
+        <button class="reveal-btn" id="reveal">Mostra risposta</button>
+        <div class="answer">
+          <div class="answer-head">
+            <span class="answer-l">Risposta</span>
+            <span class="answer-v">${esc(rispostaBreve(d))}</span>
+          </div>
+          <p class="why">${esc(d.e)}</p>
+          <a class="src" href="${esc(d.u)}" target="_blank" rel="noopener noreferrer">↗ ${esc(
+      d.u.replace("https://learn.microsoft.com", "learn.microsoft.com")
+    )}</a>
+          ${d.tg.length ? `<div class="kws">${d.tg.map((t) => `<span class="kw">${esc(t)}</span>`).join("")}</div>` : ""}
+        </div>
+      </div>
+    </article>`;
+
+    // Prima del reveal le classi hit/miss sono già nel markup ma restano
+    // inerti: sono sotto .revealed nel CSS, quindi non colorano nulla.
+    document.getElementById("reveal").addEventListener("click", () => {
+      mostrata = true;
+      document.getElementById("card").classList.add("revealed");
+      document.getElementById("reveal").blur();
+    });
+
+    document.getElementById("counter").textContent = `${cursore + 1} / ${vista.length}`;
+    const fatte = Object.keys(segni).length;
+    document.getElementById("rail").style.width = `${(fatte / BANCA.length) * 100}%`;
+    document.getElementById("prev").disabled = cursore === 0;
+    document.getElementById("next").disabled = cursore === vista.length - 1;
+    aggiornaDock(d);
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }
+
+  function aggiornaDock(d) {
+    const s = d ? segni[d.id] : null;
+    document.getElementById("mark-ok").setAttribute("aria-pressed", String(s === "ok"));
+    document.getElementById("mark-rev").setAttribute("aria-pressed", String(s === "rev"));
+  }
+
+  /* ---------- navigazione ---------- */
+
+  function vai(delta) {
+    const n = cursore + delta;
+    if (n < 0 || n >= vista.length) return;
+    cursore = n;
+    mostrata = false;
+    disegna();
+  }
+
+  function segna(valore) {
+    if (!vista.length) return;
+    const d = BANCA[vista[cursore]];
+    segni[d.id] = segni[d.id] === valore ? undefined : valore;
+    if (segni[d.id] === undefined) delete segni[d.id];
+    salva();
+    aggiornaDock(d);
+    document.getElementById("rail").style.width = `${(Object.keys(segni).length / BANCA.length) * 100}%`;
+    // Con un filtro sui segni attivo la domanda può uscire dalla vista: avanza.
+    if (filtri.mark.size && !passa(d)) {
+      const era = cursore;
+      vista = ordine.filter((i) => passa(BANCA[i]));
+      cursore = Math.min(era, Math.max(0, vista.length - 1));
+      mostrata = false;
+      disegna();
+    } else if (segni[d.id]) {
+      vai(1);
+    }
+  }
+
+  document.getElementById("prev").addEventListener("click", () => vai(-1));
+  document.getElementById("next").addEventListener("click", () => vai(1));
+  document.getElementById("mark-ok").addEventListener("click", () => segna("ok"));
+  document.getElementById("mark-rev").addEventListener("click", () => segna("rev"));
+
+  document.addEventListener("keydown", (e) => {
+    if (e.target.tagName === "INPUT") return;
+    if (e.key === "ArrowLeft") vai(-1);
+    if (e.key === "ArrowRight") vai(1);
+    if (e.key === " " || e.key === "Enter") {
+      const b = document.getElementById("reveal");
+      if (b && !mostrata) { e.preventDefault(); b.click(); }
+    }
+  });
+
+  /* ---------- filtri: costruzione chip ---------- */
+
+  function conta(pred) {
+    return BANCA.filter(pred).length;
+  }
+
+  function chip(testo, n, attivo) {
+    return `<button class="chip" aria-pressed="${attivo}">${esc(testo)}<span class="n">${n}</span></button>`;
+  }
+
+  function montaChips(el, voci, insieme, chiave) {
+    el.innerHTML = voci.map((v) => chip(v.label, v.n, insieme.has(v.val))).join("");
+    [...el.children].forEach((b, i) => {
+      b.addEventListener("click", () => {
+        const v = voci[i].val;
+        insieme.has(v) ? insieme.delete(v) : insieme.add(v);
+        b.setAttribute("aria-pressed", String(insieme.has(v)));
+        ricalcola(chiave !== "mark");
+      });
+    });
+  }
+
+  function montaFiltri() {
+    montaChips(
+      document.getElementById("f-dom"),
+      Object.entries(DOMINI).map(([k, label]) => ({ label, val: +k, n: conta((d) => d.d === +k) })),
+      filtri.dom,
+      "dom"
+    );
+    montaChips(
+      document.getElementById("f-tipo"),
+      Object.entries(TIPI).map(([k, label]) => ({ label, val: k, n: conta((d) => d.t === k) })),
+      filtri.tipo,
+      "tipo"
+    );
+    montaChips(
+      document.getElementById("f-diff"),
+      Object.entries(DIFF).map(([k, label]) => ({ label, val: +k, n: conta((d) => d.df === +k) })),
+      filtri.diff,
+      "diff"
+    );
+    rimontaSegni();
+  }
+
+  function rimontaSegni() {
+    const voci = [
+      { label: "Mai viste", val: "new", n: conta((d) => !segni[d.id]) },
+      { label: "Da rivedere", val: "rev", n: conta((d) => segni[d.id] === "rev") },
+      { label: "Le sapevo", val: "ok", n: conta((d) => segni[d.id] === "ok") },
+    ];
+    montaChips(document.getElementById("f-mark"), voci, filtri.mark, "mark");
+  }
+
+  document.getElementById("btn-filters").addEventListener("click", (e) => {
+    const aperto = document.getElementById("filters").classList.toggle("open");
+    e.currentTarget.setAttribute("aria-pressed", String(aperto));
+    if (aperto) rimontaSegni();
+  });
+
+  let debounce;
+  document.getElementById("search").addEventListener("input", (e) => {
+    clearTimeout(debounce);
+    debounce = setTimeout(() => {
+      filtri.q = e.target.value.trim().toLowerCase();
+      ricalcola(false);
+    }, 180);
+  });
+
+  document.getElementById("btn-shuffle").addEventListener("click", () => {
+    for (let i = ordine.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [ordine[i], ordine[j]] = [ordine[j], ordine[i]];
+    }
+    mostrata = false;
+    ricalcola(false);
+  });
+
+  document.getElementById("btn-reset").addEventListener("click", () => {
+    filtri.dom.clear();
+    filtri.tipo.clear();
+    filtri.diff.clear();
+    filtri.mark.clear();
+    filtri.q = "";
+    document.getElementById("search").value = "";
+    montaFiltri();
+    ricalcola(false);
+  });
+
+  document.getElementById("btn-export").addEventListener("click", () => {
+    const righe = BANCA.filter((d) => segni[d.id]).map((d) => ({
+      id: d.id,
+      segno: segni[d.id],
+      dominio: DOMINI[d.d],
+      domanda: d.q.slice(0, 120),
+    }));
+    const blob = new Blob([JSON.stringify(righe, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "az104_segni.json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  document.getElementById("btn-wipe").addEventListener("click", () => {
+    if (!confirm("Cancello tutti i segni? Le domande restano, i tuoi progressi no.")) return;
+    segni = {};
+    salva();
+    rimontaSegni();
+    ricalcola(false);
+  });
+
+  document.getElementById("btn-theme").addEventListener("click", () => {
+    const attuale =
+      document.documentElement.dataset.theme ||
+      (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    document.documentElement.dataset.theme = attuale === "dark" ? "light" : "dark";
+  });
+
+  document.getElementById("notice-x").addEventListener("click", () => {
+    document.getElementById("notice").hidden = true;
+    try { localStorage.setItem(CHIAVE + "-avviso", "1"); } catch (err) { /* volatile */ }
+  });
+
+  /* ---------- avvio ---------- */
+
+  let avvisoLetto = false;
+  try { avvisoLetto = localStorage.getItem(CHIAVE + "-avviso") === "1"; } catch (err) { /* volatile */ }
+  document.getElementById("notice").hidden = avvisoLetto;
+
+  montaFiltri();
+  ricalcola(false);
+
+  if (memoriaVolatile) {
+    const n = document.getElementById("notice");
+    n.hidden = false;
+    n.innerHTML =
+      "<strong>I progressi non vengono salvati.</strong> Questo browser blocca la memoria locale: " +
+      "i segni valgono solo finché la pagina resta aperta. Usa <em>Esporta segni</em> prima di chiuderla.";
+  }
+</script>
