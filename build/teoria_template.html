@@ -117,6 +117,19 @@ a{color:var(--accent-2)}
 .segna.on{background:var(--good-soft);border-color:var(--good);color:var(--good);font-weight:600}
 .vuoto{text-align:center;padding:50px 20px;color:var(--text-3)}
 
+/* ---------- ascolto ---------- */
+.voce{background:var(--card-2);border:1px solid var(--line);border-radius:7px;padding:6px 8px;
+  font-size:12.5px;max-width:210px}
+.audio{display:flex;align-items:center;gap:7px}
+.btn.play.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.volte{font-size:11.5px;color:var(--text-3);font-family:var(--font-mono)}
+/* La frase in lettura: fondo tenue e sottolineatura, cosi' si segue con l'occhio
+   anche da lontano. Niente animazioni: darebbero fastidio su un testo lungo. */
+.frase.leggo{background:var(--accent-soft);border-radius:3px;
+  box-shadow:0 1px 0 var(--accent) inset,0 -2px 0 var(--accent) inset}
+.frase.leggo .par{background:var(--accent);color:#fff;border-radius:2px;padding:0 1px}
+.senza-voci{font-size:11.5px;color:var(--signal);padding:0 4px}
+
 @media (max-width:900px){
   .wrap{grid-template-columns:1fr;gap:16px;padding:14px}
   .rail{position:static;max-height:none;border-bottom:1px solid var(--line);padding-bottom:12px}
@@ -128,6 +141,7 @@ a{color:var(--accent-2)}
 <header class="top">
   <div class="brand">Studia <span>AZ-104</span></div>
   <div class="top-right">
+    <select class="voce" id="voce" aria-label="Voce per l'ascolto"></select>
     <input class="cerca" id="cerca" type="search" placeholder="Cerca nella teoria…" aria-label="Cerca">
     <button class="btn" id="tema" type="button">Tema</button>
   </div>
@@ -147,11 +161,14 @@ const DOM_IT = {
   4:"Rete virtuale", 5:"Monitoraggio e manutenzione"
 };
 
-/* progressi: solo quali lezioni hai segnato come studiate, in locale */
-const K = "az104:teoria";
-let fatte = {};
+/* progressi: quali lezioni hai segnato come studiate e quante volte le hai
+   ascoltate, in locale */
+const K = "az104:teoria", K_A = "az104:teoria:ascolti", K_V = "az104:teoria:voce";
+let fatte = {}, ascolti = {};
 try { fatte = JSON.parse(localStorage.getItem(K) || "{}"); } catch(e){ fatte = {}; }
+try { ascolti = JSON.parse(localStorage.getItem(K_A) || "{}"); } catch(e){ ascolti = {}; }
 const salva = () => { try { localStorage.setItem(K, JSON.stringify(fatte)); } catch(e){} };
+const salvaA = () => { try { localStorage.setItem(K_A, JSON.stringify(ascolti)); } catch(e){} };
 
 const esc = s => String(s == null ? "" : s)
   .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
@@ -180,6 +197,204 @@ function inline(s){
     .replace(/\*\*([^*]+)\*\*/g, (m,g) => "<strong>" + g + "</strong>");
 }
 
+/* ============================================================ ascolto
+   La lettura va a frasi, non tutta d'un fiato: si evidenzia quella in corso,
+   e per un limite noto di Chrome un'utterance lunga si interrompe da sola
+   dopo una ventina di secondi. Spezzare risolve entrambe le cose. */
+const TTS = window.speechSynthesis;
+let voci = [], voce = null;
+let ora = null;   // { i, frasi, pos, pausa }
+
+/* Le voci di sistema piu' vecchie sono quelle che suonano robotiche. Le si
+   riconosce perche' sono locali: le naturali arrivano dalla rete o si
+   dichiarano Natural/Neural nel nome. Se ne esiste almeno una naturale, le
+   altre non si mostrano nemmeno. */
+const naturale = v => !v.localService || /natural|neural|online/i.test(v.name);
+
+function caricaVoci(){
+  if(!TTS) return;
+  const it = TTS.getVoices().filter(v => /^it\b|^it[-_]/i.test(v.lang));
+  const nat = it.filter(naturale);
+  voci = nat.length ? nat : it;
+  /* Isabella prima, poi le altre naturali in ordine alfabetico. */
+  voci.sort((a, b) => {
+    const ia = /isabella/i.test(a.name) ? 0 : 1, ib = /isabella/i.test(b.name) ? 0 : 1;
+    return ia - ib || a.name.localeCompare(b.name);
+  });
+
+  const sel = document.getElementById("voce");
+  const salvata = (() => { try { return localStorage.getItem(K_V); } catch(e){ return null; } })();
+  sel.innerHTML = "";
+  if(!voci.length){
+    sel.style.display = "none";
+    const av = document.getElementById("no-voci");
+    if(av) av.textContent = it.length ? "" : "Nessuna voce italiana installata";
+    return;
+  }
+  sel.style.display = "";
+  voci.forEach((v, i) => {
+    const o = document.createElement("option");
+    o.value = i;
+    /* "Microsoft Isabella Online (Natural) - Italian (Italy)" -> "Isabella" */
+    o.textContent = v.name.replace(/^Microsoft\s+/i, "")
+                          .replace(/\s*(Online|\(Natural\)|Desktop)\s*/gi, " ")
+                          .replace(/\s*-\s*Italian.*$/i, "").trim() || v.name;
+    sel.appendChild(o);
+  });
+  const iSalvata = voci.findIndex(v => v.name === salvata);
+  sel.selectedIndex = iSalvata >= 0 ? iSalvata : 0;
+  voce = voci[sel.selectedIndex];
+}
+
+/* Avvolge ogni frase in uno span, cosi' si puo' evidenziare quella in lettura.
+   Si salta il contenuto dei blocchi di codice: letto ad alta voce e' rumore. */
+function preparaFrasi(root){
+  const tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(n){
+      if(n.parentElement.closest("pre")) return NodeFilter.FILTER_REJECT;
+      if(n.parentElement.closest(".sez h3")) return NodeFilter.FILTER_REJECT;
+      return n.nodeValue.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+    }
+  });
+  const nodi = [];
+  while(tw.nextNode()) nodi.push(tw.currentNode);
+  nodi.forEach(n => {
+    // taglia dopo . ! ? : seguiti da spazio, tenendo la punteggiatura
+    const pezzi = n.nodeValue.match(/[^.!?:]+[.!?:]*\s*/g);
+    if(!pezzi || pezzi.length === 0) return;
+    const frag = document.createDocumentFragment();
+    pezzi.forEach(p => {
+      if(!p.trim()){ frag.appendChild(document.createTextNode(p)); return; }
+      const s = document.createElement("span");
+      s.className = "frase";
+      s.textContent = p;
+      frag.appendChild(s);
+    });
+    n.parentNode.replaceChild(frag, n);
+  });
+}
+
+function pulisci(){
+  document.querySelectorAll(".frase.leggo").forEach(s => {
+    s.classList.remove("leggo");
+    if(s.dataset.txt){ s.textContent = s.dataset.txt; delete s.dataset.txt; }
+  });
+}
+
+function ferma(){
+  if(TTS) TTS.cancel();
+  ora = null;
+  pulisci();
+  aggiornaAudio();
+}
+
+function avvia(i){
+  if(!TTS || !voce) return;
+  TTS.cancel();
+  pulisci();
+  const card = document.getElementById("lez-" + i);
+  if(!card) return;
+  const frasi = [...card.querySelectorAll(".frase")].filter(s => s.textContent.trim().length > 1);
+  if(!frasi.length) return;
+  ora = { i, frasi, pos: 0, pausa: false };
+  parla();
+  aggiornaAudio();
+}
+
+function parla(){
+  if(!ora || ora.pos >= ora.frasi.length){
+    if(ora){
+      const l = LEZIONI[ora.i];
+      ascolti[l.o] = (ascolti[l.o] || 0) + 1;
+      salvaA();
+      ora = null;
+      pulisci();
+      aggiornaAudio();
+      disegnaRail();
+    }
+    return;
+  }
+  const span = ora.frasi[ora.pos];
+  const testo = span.textContent;
+  const u = new SpeechSynthesisUtterance(testo);
+  u.voice = voce;
+  u.lang = voce.lang;
+  u.rate = 1;
+
+  u.onstart = () => {
+    pulisci();
+    span.classList.add("leggo");
+    span.dataset.txt = testo;
+    /* si scorre solo se la frase e' uscita dallo schermo */
+    const r = span.getBoundingClientRect();
+    if(r.top < 70 || r.bottom > innerHeight - 20)
+      span.scrollIntoView({ behavior:"smooth", block:"center" });
+  };
+  /* Se il motore manda gli eventi di confine, si evidenzia anche la parola.
+     Le voci di rete spesso non li mandano: in quel caso resta la frase, che
+     e' gia' abbastanza per seguire. */
+  u.onboundary = ev => {
+    if(ev.name && ev.name !== "word") return;
+    const c = ev.charIndex;
+    if(typeof c !== "number" || c < 0 || c >= testo.length) return;
+    const fine = testo.indexOf(" ", c);
+    const par = testo.slice(c, fine < 0 ? testo.length : fine);
+    if(!par.trim()) return;
+    span.textContent = "";
+    span.appendChild(document.createTextNode(testo.slice(0, c)));
+    const m = document.createElement("span");
+    m.className = "par";
+    m.textContent = par;
+    span.appendChild(m);
+    span.appendChild(document.createTextNode(testo.slice(c + par.length)));
+  };
+  u.onend = () => {
+    if(!ora) return;
+    if(span.dataset.txt){ span.textContent = span.dataset.txt; delete span.dataset.txt; }
+    span.classList.remove("leggo");
+    ora.pos++;
+    parla();
+  };
+  u.onerror = () => { if(ora){ ora.pos++; parla(); } };
+  TTS.speak(u);
+}
+
+function pausa(){
+  if(!ora || !TTS) return;
+  if(ora.pausa){ TTS.resume(); ora.pausa = false; }
+  else { TTS.pause(); ora.pausa = true; }
+  aggiornaAudio();
+}
+
+/* Etichetta e stato dei pulsanti, senza ridisegnare la pagina: un redraw
+   durante la lettura la interromperebbe. */
+function aggiornaAudio(){
+  document.querySelectorAll(".audio").forEach(box => {
+    const i = +box.dataset.i;
+    const l = LEZIONI[i];
+    const play = box.querySelector(".play");
+    const stop = box.querySelector(".stop");
+    const volte = box.querySelector(".volte");
+    const attiva = ora && ora.i === i;
+    const n = ascolti[l.o] || 0;
+
+    play.classList.toggle("on", !!attiva);
+    play.textContent = attiva ? (ora.pausa ? "▶ Riprendi" : "⏸ Pausa")
+                              : (n ? "↻ Riascolta" : "▶ Ascolta");
+    stop.style.display = attiva ? "" : "none";
+    volte.textContent = attiva ? "" : (n === 0 ? "da ascoltare"
+                       : n === 1 ? "ascoltato 1 volta" : "ascoltato " + n + " volte");
+  });
+}
+
+if(TTS){
+  caricaVoci();
+  TTS.onvoiceschanged = caricaVoci;
+  /* Chrome sospende la coda se la scheda va in background. */
+  document.addEventListener("visibilitychange", () => { if(document.hidden) ferma(); });
+  addEventListener("beforeunload", () => TTS.cancel());
+}
+
 let filtro = "";
 function visibili(){
   if(!filtro) return LEZIONI;
@@ -188,12 +403,9 @@ function visibili(){
     (l.t + " " + l.o + " " + l.c + " " + l.es + " " + l.tr).toLowerCase().includes(q));
 }
 
-function disegna(){
+function disegnaRail(){
   const lista = visibili();
   const rail = document.getElementById("rail");
-  const main = document.getElementById("main");
-
-  /* indice a sinistra, raggruppato per dominio */
   let html = "", domCorrente = null;
   lista.forEach((l, i) => {
     if(l.d !== domCorrente){
@@ -210,6 +422,13 @@ function disegna(){
       if(el) el.scrollIntoView({ behavior:"smooth", block:"start" });
     };
   });
+}
+
+function disegna(){
+  const lista = visibili();
+  const main = document.getElementById("main");
+  ferma();
+  disegnaRail();
 
   /* lezioni */
   const n = Object.keys(fatte).length;
@@ -218,7 +437,10 @@ function disegna(){
     "il concetto in due righe, un esempio concreto, e la trappola che l'esame ci costruisce sopra. " +
     "Sono gli stessi obiettivi con cui il simulatore ti dice cosa ripassare, quindi da lì arrivi " +
     "dritto alla lezione giusta. <strong>" + n + " di " + LEZIONI.length +
-    "</strong> segnate come studiate.</p></div>";
+    "</strong> segnate come studiate.</p>" +
+    "<p style='margin-top:9px'>Ogni lezione si può <strong>ascoltare</strong>: la frase in " +
+    "lettura resta evidenziata, e il pulsante mette in pausa. La voce si sceglie in alto a " +
+    "destra — sono elencate solo quelle naturali, se il tuo sistema ne ha.</p></div>";
 
   if(!lista.length){
     out += '<div class="lez"><p class="vuoto">Nessuna lezione contiene «' + esc(filtro) + '».</p></div>';
@@ -234,25 +456,56 @@ function disegna(){
         '<div class="sez tr"><h3>All\'esame</h3>' + rendi(l.tr) + "</div>" +
       "</div>" +
       '<div class="lez-f">' +
+        '<span class="audio" data-i="' + i + '">' +
+          '<button class="btn play" type="button">▶ Ascolta</button>' +
+          '<button class="btn stop" type="button" style="display:none" aria-label="Interrompi">■</button>' +
+          '<span class="volte"></span>' +
+        "</span>" +
         '<a href="' + esc(l.u) + '" target="_blank" rel="noopener noreferrer">↗ Approfondisci su Microsoft Learn</a>' +
-        '<button class="btn segna' + (fatte[l.o] ? " on" : "") + '" data-o="' + esc(l.o) + '">' +
+        '<button class="btn segna' + (fatte[l.o] ? " on" : "") + '" data-o="' + esc(l.o) + '" data-i="' + i + '">' +
           (fatte[l.o] ? "✓ Studiata" : "Segna studiata") + "</button>" +
       "</div></article>";
   });
   main.innerHTML = out;
 
+  /* le frasi vanno avvolte dopo l'inserimento nel DOM, non prima */
+  main.querySelectorAll(".lez-b").forEach(preparaFrasi);
+
+  /* Aggiorna sul posto invece di ridisegnare: un redraw durante la lettura
+     la interromperebbe, e segnare una lezione mentre l'ascolti e' normale. */
   main.querySelectorAll(".segna").forEach(b => {
     b.onclick = () => {
       const o = b.dataset.o;
       if(fatte[o]) delete fatte[o]; else fatte[o] = 1;
-      salva(); disegna();
+      salva();
+      b.classList.toggle("on", !!fatte[o]);
+      b.textContent = fatte[o] ? "✓ Studiata" : "Segna studiata";
+      disegnaRail();
     };
   });
+
+  main.querySelectorAll(".audio").forEach(box => {
+    const i = +box.dataset.i;
+    box.querySelector(".play").onclick = () => {
+      if(!TTS || !voce){
+        alert("Il browser non ha voci italiane disponibili per la lettura.");
+        return;
+      }
+      if(ora && ora.i === i) pausa(); else avvia(i);
+    };
+    box.querySelector(".stop").onclick = ferma;
+  });
+  aggiornaAudio();
 }
 
 document.getElementById("cerca").addEventListener("input", e => {
   filtro = e.target.value.trim();
   disegna();
+});
+document.getElementById("voce").addEventListener("change", e => {
+  ferma();
+  voce = voci[+e.target.value] || voci[0];
+  if(voce){ try { localStorage.setItem(K_V, voce.name); } catch(err){} }
 });
 document.getElementById("tema").onclick = () => {
   const cur = document.documentElement.getAttribute("data-theme");
