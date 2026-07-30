@@ -18,7 +18,7 @@ Studio autonomo, io + Claude, nessun tutor. Terraform, Azure DevOps e capstone r
 ### Da dove partiamo (mappa onesta)
 
 | Dominio d'esame (peso) | Già coperto (M0–M5) | Da coprire nello sprint |
-|---|---|---|
+| --- | --- | --- |
 | Identità e governance (20–25%) | RBAC base, tag, budget, Key Vault, MI | Entra ID (utenti/gruppi/guest/SSPR), ruoli custom, lock, move, Azure Policy |
 | Storage (15–20%) | Account, redundancy, tier, SAS, lifecycle, RBAC dati | AzCopy, versioning/soft delete, object replication, Azure Files avanzato, File Sync |
 | Compute (20–25%) | App Service base, Azure SQL | VM in profondità, dischi, disponibilità, VMSS, ARM/Bicep, slot/autoscale, ACR/ACI/Container Apps |
@@ -41,7 +41,7 @@ Prenota per **mercoledì 2 settembre** (o giovedì 3): una data fissata è il mi
 ## 3. Come funziona ogni giorno (il metodo)
 
 | Blocco | Durata | Cosa fai |
-|---|---|---|
+| --- | --- | --- |
 | Teoria | 45–60′ | Il modulo Microsoft Learn del giorno (percorsi ufficiali AZ-104, gratuiti). Appunti essenziali nel diario. |
 | Lab | 60–90′ | Il lab del giorno su Portale + CLI. Dove il modulo MS Learn offre la sandbox gratuita, usala: zero costi. |
 | Quiz con Claude | 30′ | 10 domande stile esame sull'argomento del giorno (prompt n.1). Ogni errore diventa una flashcard. |
@@ -74,7 +74,7 @@ Usali così come sono, cambiando solo l'argomento tra parentesi quadre.
 ## 5. Il calendario dello sprint in una tabella
 
 | Sett. | Periodo 2026 | Tema | Dominio d'esame (peso) |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 1 | 20 – 25 lug | Entra ID e governance | Identità e governance (20–25%) |
 | 2 | 27 lug – 1 ago | Compute I: VM, dischi, disponibilità, VMSS | Compute (20–25%) |
 | 3 | 3 – 8 ago | Compute II: ARM/Bicep, App Service avanzato, container | Compute (20–25%) |
@@ -92,7 +92,7 @@ Usali così come sono, cambiando solo l'argomento tra parentesi quadre.
 Percorso MS Learn: *"AZ-104: Manage identities and governance in Azure"*. È il dominio più pesante e il gap più grande: si parte da qui.
 
 | Giorno | Studio e lab (2,5–3 h) | Con Claude, la sera (30′) |
-|---|---|---|
+| --- | --- | --- |
 | Lun 20 | Utenti e gruppi Entra ID: membri vs guest, gruppi assegnati vs dinamici, licenze ai gruppi. **Lab:** 3 utenti test, 1 gruppo assegnato + 1 dinamico (department=IT), invita un guest con una mail esterna. | Quiz 10 domande: utenti e gruppi |
 | Mar 21 | SSPR (metodi, registrazione combinata) + security default/MFA + administrative unit (teoria). **Lab:** abilita SSPR su un gruppo pilota e prova il reset completo. | Quiz 10: SSPR e MFA |
 | Mer 22 | RBAC in profondità: assegnazione = principal+ruolo+scope, ereditarietà MG→sub→RG→risorsa, ruoli Azure vs ruoli Entra ID, control plane vs data plane. **Lab:** assegna ruoli a scope diversi e verifica con "Check access". | Quiz 10: RBAC + interrogazione (prompt 4) |
@@ -105,7 +105,7 @@ Percorso MS Learn: *"AZ-104: Manage identities and governance in Azure"*. È il 
 Percorso MS Learn: *"AZ-104: Deploy and manage Azure compute resources"* (parte VM). Le VM sono le risorse più costose: **spegni/elimina ogni sera**.
 
 | Giorno | Studio e lab (2,5–3 h) | Con Claude, la sera (30′) |
-|---|---|---|
+| --- | --- | --- |
 | Lun 27 | Creazione VM, serie e dimensioni, resize, connessione (Bastion già noto). **Lab:** crea una VM, ridimensionala, documenta l'impatto. | Quiz 10: VM base e sizing |
 | Mar 28 | Managed disk: Standard HDD/SSD, Premium, Ultra; data disk; snapshot e disco da snapshot. **Lab:** aggiungi data disk, snapshot, ricrea disco. | Quiz 10: dischi e snapshot |
 | Mer 29 | Cifratura dischi: SSE (default), encryption at host, ADE — differenze e quando l'esame chiede quale. Immagini e Azure Compute Gallery. **Lab:** cattura un'immagine generalizzata. | Quiz 10: cifratura e immagini |
@@ -118,7 +118,7 @@ Percorso MS Learn: *"AZ-104: Deploy and manage Azure compute resources"* (parte 
 Chiude il dominio compute. L'esame chiede **ARM/Bicep, non Terraform**: è quasi solo traduzione di concetti già usati al lavoro.
 
 | Giorno | Studio e lab (2,5–3 h) | Con Claude, la sera (30′) |
-|---|---|---|
+| --- | --- | --- |
 | Lun 3 | ARM template: parameters/variables/resources/outputs; export e redeploy; deployment mode incremental vs complete (**attenzione a complete!**). **Lab:** esporta il template dello storage, puliscilo, rideploya in un RG nuovo. | Quiz 10: ARM template |
 | Mar 4 | Bicep: sintassi, param, moduli, decompile, what-if. Mappa mentale: plan→what-if, state→non esiste. **Lab:** `bicep decompile` del template di ieri, sistemalo, rideploya con what-if. | Quiz 10: Bicep |
 | Mer 5 | App Service avanzato: piani e scaling (manuale/autoscale), deployment slot e swap, impostazioni sticky. **Lab:** slot "staging" sulla web app, deploy di una modifica, swap. | Quiz 10: App Service e slot |
@@ -131,7 +131,7 @@ Chiude il dominio compute. L'esame chiede **ARM/Bicep, non Terraform**: è quasi
 Percorso MS Learn: *"AZ-104: Configure and manage virtual networks for Azure administrators"*. Settimana da 5 giorni: sabato 15 è Ferragosto, riposati.
 
 | Giorno | Studio e lab (2,5–3 h) | Con Claude, la sera (30′) |
-|---|---|---|
+| --- | --- | --- |
 | Lun 10 | Azure DNS: zone pubbliche e private, record, auto-registration. **Lab:** private DNS zone collegata alla VNet, verifica la risoluzione tra 2 VM. | Quiz 10: DNS |
 | Mar 11 | Azure Load Balancer: SKU, backend pool, health probe, regole LB e NAT inbound. **Lab:** LB Standard davanti a 2 VM con probe HTTP; spegni una VM e osserva il failover. | Quiz 10: Load Balancer |
 | Mer 12 | Routing: route table/UDR, next hop, NAT Gateway per l'uscita. **Lab:** UDR che devia il traffico di una subnet, verifica con Network Watcher (next hop). | Quiz 10: routing |
@@ -143,7 +143,7 @@ Percorso MS Learn: *"AZ-104: Configure and manage virtual networks for Azure adm
 Percorsi MS Learn: *"AZ-104: Implement and manage storage in Azure"* + *"AZ-104: Monitor and back up Azure resources"*. Venerdì c'è il practice che decide il **go/no-go**.
 
 | Giorno | Studio e lab (2,5–3 h) | Con Claude, la sera (30′) |
-|---|---|---|
+| --- | --- | --- |
 | Lun 17 | Strumenti: AzCopy e Storage Explorer; import/export (cenni). **Lab:** copia ~1 GB di file tra due storage account con AzCopy misurando i tempi. | Quiz 10: AzCopy e tool |
 | Mar 18 | Blob avanzato: versioning, soft delete (blob e container), snapshot, point-in-time restore, object replication. **Lab:** 3 versioni di un blob, cancella, ripristina. | Quiz 10: protezione dati blob |
 | Mer 19 | Azure Files avanzato: accesso identity-based, quota, snapshot; Azure File Sync (concetti). Ripasso SAS + stored access policy. **Lab:** share con snapshot e restore di un file. | Quiz 10: Files e SAS |
@@ -156,7 +156,7 @@ Percorsi MS Learn: *"AZ-104: Implement and manage storage in Azure"* + *"AZ-104:
 Niente argomenti nuovi: si consolida. Ogni simulazione in condizioni reali (timer, niente pause, niente appunti).
 
 | Giorno | Studio e lab (2,5–3 h) | Con Claude, la sera (30′) |
-|---|---|---|
+| --- | --- | --- |
 | Lun 24 | **SIMULAZIONE COMPLETA n.1** (practice assessment intero, cronometrato). Pomeriggio: analisi di ogni errore, flashcard aggiornate. | Prompt 2 su ogni errore |
 | Mar 25 | Ripasso mirato dei domini sotto l'80% — giorno 1: rileggi appunti, rifai i lab-lampo dei punti deboli (30′ l'uno). | Interrogazione sui domini deboli |
 | Mer 26 | **SIMULAZIONE COMPLETA n.2.** Pomeriggio: analisi errori, confronto punteggi con lunedì. | Prompt 2 + scenario (prompt 5) |
@@ -177,7 +177,7 @@ Niente argomenti nuovi: si consolida. Ogni simulazione in condizioni reali (time
 Il **Practice n.5 di venerdì 21 agosto** decide, senza sentimenti:
 
 | Risultato practice n.5 | Decisione |
-|---|---|
+| --- | --- |
 | ≥ 75% con tutti i domini ≥ 70% | **GO:** esame confermato per il 2 settembre. |
 | 70–75% | **GO con riserva:** sposta l'esame a giovedì 3 o venerdì 4 e dedica i giorni extra ai domini deboli. |
 | < 70% | **NO-GO:** riprogramma l'esame a metà settembre (di norma gratis entro le 24–48 h). Due settimane in più valgono più di un tentativo bruciato. |
@@ -189,7 +189,7 @@ Nelle simulazioni della settimana 6 vale lo stesso principio: **si prenota la fi
 ## 8. Tabella punteggi (compilala ogni venerdì)
 
 | Data | Practice | Identità | Storage | Compute | Rete | Monitor | Totale |
-|---|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- | --- |
 | 24 lug | n.1 (baseline) | | | | | | |
 | 31 lug | n.2 | | | | | | |
 | 7 ago | n.3 | | | | | | |
@@ -218,12 +218,12 @@ Terraform (chiudi pure M6 se ti va, ma fuori da queste ore), Azure DevOps, il mo
 ---
 ---
 
-# Appendice A — Mappa mentale AWS → Azure
+## Appendice A — Mappa mentale AWS → Azure
 
 Conoscendo già AWS (CLF-C02), gran parte del lavoro è **tradurre** concetti, non impararli da zero.
 
 | Concetto | AWS (lo sai già) | Azure (da imparare) |
-|---|---|---|
+| --- | --- | --- |
 | Identità / permessi | IAM users, roles, policies | **Microsoft Entra ID** + **RBAC** (ruoli su scope) |
 | Account / organizzazione | Account, Organizations, OU | **Subscription**, **Management Group**, **Resource Group** |
 | Governance | SCP, Tag policies | **Azure Policy**, **Tag**, **Resource Lock** |
@@ -241,7 +241,7 @@ Conoscendo già AWS (CLF-C02), gran parte del lavoro è **tradurre** concetti, n
 
 ---
 
-# Appendice B — Da chiedere al tutor in Warptech
+## Appendice B — Da chiedere al tutor in Warptech
 
 - Un'ora "protetta" a settimana per studio/lab, oppure accesso esteso all'ambiente di test (è interesse dell'azienda: i partner Microsoft valorizzano il personale certificato).
 - Copertura del **voucher d'esame** (~165 USD/equivalente) — spesso le aziende lo coprono per i tirocinanti.
@@ -251,7 +251,7 @@ Conoscendo già AWS (CLF-C02), gran parte del lavoro è **tradurre** concetti, n
 
 ---
 
-# Appendice C — Note dal piano semestrale (superato)
+## Appendice C — Note dal piano semestrale (superato)
 
 Vale ancora la pena ricordarle:
 

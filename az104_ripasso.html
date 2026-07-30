@@ -101,7 +101,6 @@
     font-family: var(--sans);
     font-size: var(--step-0);
     line-height: 1.55;
-    -webkit-text-size-adjust: 100%;
   }
 
   :focus-visible {
@@ -119,6 +118,7 @@
     top: 0;
     z-index: 20;
     background: color-mix(in srgb, var(--surface) 92%, transparent);
+    -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--line);
   }
@@ -162,6 +162,23 @@
     font-family: var(--mono);
     font-size: var(--step--1);
     color: var(--ink-2);
+  }
+
+  .voice-select {
+    min-width: 170px;
+    max-width: 240px;
+    height: 36px;
+    padding: 0 10px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    color: var(--ink-2);
+    font: inherit;
+  }
+
+  .voice-select:disabled {
+    opacity: .6;
+    cursor: not-allowed;
   }
 
   .icon-btn[aria-pressed="true"] {
@@ -362,7 +379,7 @@
     margin: 0 0 14px;
     font-size: var(--step-1);
     line-height: 1.5;
-    text-wrap: pretty;
+    white-space: normal;
   }
 
   .opts {
@@ -548,7 +565,7 @@
     font-size: var(--step--1);
     line-height: 1.62;
     color: var(--ink-2);
-    text-wrap: pretty;
+    white-space: normal;
   }
 
   .src {
@@ -588,6 +605,7 @@
     bottom: 0;
     z-index: 20;
     background: color-mix(in srgb, var(--surface) 94%, transparent);
+    -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
     border-top: 1px solid var(--line);
     padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
@@ -658,6 +676,8 @@
   <div class="top-row">
     <span class="brand">AZ-104</span>
     <button class="icon-btn" id="btn-filters" aria-pressed="false" aria-controls="filters">Filtri</button>
+    <button class="icon-btn" id="btn-tts" title="Ascolta la domanda in italiano">🔊</button>
+    <select class="voice-select" id="voice-select" title="Seleziona voce italiana"></select>
     <button class="icon-btn" id="btn-shuffle" title="Mescola l'ordine">Mescola</button>
     <span class="counter" id="counter">—</span>
   </div>
@@ -720,6 +740,144 @@
   };
   const DIFF = { 1: "Base", 2: "Applicativa", 3: "Scenario" };
   const LETTERE = ["A", "B", "C", "D", "E"];
+
+  const synth = window.speechSynthesis;
+  let ttsVoice = null;
+  let ttsUtterance = null;
+  let ttsActive = false;
+  let italianVoices = [];
+
+  function formatVoiceName(v) {
+    return `${v.name} (${v.lang})`;
+  }
+
+  function findItalianVoice() {
+    const voices = synth.getVoices();
+    const italian = voices.filter(
+      (v) => /^it(-|$)/i.test(v.lang) || /italian/i.test(v.name.toLowerCase())
+    );
+    if (italian.length) {
+      const female = italian.find((v) => /female|femmina|elena|francesca|laura|silvia|giulia|martina|chiara/i.test(v.name.toLowerCase()));
+      return female || italian[0];
+    }
+    const fallbackFemale = voices.find((v) => /female|femmina|elena|francesca|laura|silvia|giulia|martina|chiara/i.test(v.name.toLowerCase()));
+    return fallbackFemale || voices[0] || null;
+  }
+
+  function populateVoiceList() {
+    const select = document.getElementById("voice-select");
+    if (!select) return;
+    const voices = synth.getVoices();
+    italianVoices = voices.filter(
+      (v) => /^it(-|$)/i.test(v.lang) || /italian/i.test(v.name.toLowerCase())
+    );
+    if (!italianVoices.length) {
+      italianVoices = voices.filter((v) => /female|femmina|elena|francesca|laura|silvia|giulia|martina|chiara/i.test(v.name.toLowerCase()));
+    }
+    if (!italianVoices.length) {
+      italianVoices = voices;
+    }
+    if (!italianVoices.length) {
+      select.innerHTML = `<option value="">Nessuna voce disponibile</option>`;
+      select.disabled = true;
+      ttsVoice = null;
+      updateTtsButton();
+      return;
+    }
+
+    select.innerHTML = italianVoices
+      .map((v, i) => `<option value="${i}">${esc(formatVoiceName(v))}</option>`)
+      .join("");
+    select.disabled = false;
+    const preferredIndex = italianVoices.findIndex((v) => /female|femmina|elena|francesca|laura|silvia|giulia|martina|chiara/i.test(v.name.toLowerCase()));
+    select.selectedIndex = preferredIndex >= 0 ? preferredIndex : 0;
+    ttsVoice = italianVoices[select.selectedIndex];
+    updateTtsButton();
+  }
+
+  function updateTtsButton() {
+    const btn = document.getElementById("btn-tts");
+    const supported = window.speechSynthesis && window.SpeechSynthesisUtterance;
+    btn.disabled = !supported || !ttsVoice;
+    btn.classList.toggle("speaking", ttsActive);
+    btn.setAttribute("aria-pressed", String(ttsActive));
+    if (!supported) {
+      btn.title = "Sintesi vocale non supportata da questo browser.";
+      return;
+    }
+    if (!ttsVoice) {
+      btn.title = "Voce italiana non trovata: usa la voce predefinita del browser.";
+      return;
+    }
+    btn.title = ttsActive
+      ? "Interrompi lettura"
+      : `Ascolta la domanda con la voce ${ttsVoice.name}`;
+  }
+
+  function stopSpeech() {
+    if (!window.speechSynthesis) return;
+    synth.cancel();
+    ttsActive = false;
+    ttsUtterance = null;
+    updateTtsButton();
+  }
+
+  function getTtsText(d) {
+    if (!d) return "";
+    const question = `Domanda ${d.id}. Dominio ${DOMINI[d.d]}. ${d.s}. ${d.q}.`;
+    if (!mostrata) return question;
+    const answer = `Risposta corretta: ${rispostaBreve(d)}. ${d.e}.`;
+    return `${question} ${answer}`;
+  }
+
+  function speakCurrentCard() {
+    if (!window.SpeechSynthesisUtterance) return;
+    stopSpeech();
+    const d = vista.length ? BANCA[vista[cursore]] : null;
+    if (!d) return;
+    const msg = new SpeechSynthesisUtterance(getTtsText(d));
+    msg.lang = "it-IT";
+    if (ttsVoice) msg.voice = ttsVoice;
+    msg.rate = 0.95;
+    msg.pitch = 1.05;
+    msg.onend = () => {
+      ttsActive = false;
+      updateTtsButton();
+    };
+    msg.onerror = () => {
+      ttsActive = false;
+      updateTtsButton();
+    };
+    ttsUtterance = msg;
+    ttsActive = true;
+    updateTtsButton();
+    synth.speak(msg);
+  }
+
+  function initTts() {
+    const btn = document.getElementById("btn-tts");
+    const select = document.getElementById("voice-select");
+    if (!window.speechSynthesis || !window.SpeechSynthesisUtterance || !btn || !select) {
+      return;
+    }
+    populateVoiceList();
+    synth.onvoiceschanged = populateVoiceList;
+    setTimeout(populateVoiceList, 100);
+    select.addEventListener("change", (e) => {
+      const idx = Number(e.target.value);
+      if (!Number.isNaN(idx) && italianVoices[idx]) {
+        ttsVoice = italianVoices[idx];
+        updateTtsButton();
+      }
+    });
+    btn.addEventListener("click", () => {
+      if (ttsActive) {
+        stopSpeech();
+      } else {
+        speakCurrentCard();
+      }
+    });
+  }
 
   /* ---------- stato persistente ---------- */
 
@@ -922,6 +1080,7 @@
   /* ---------- navigazione ---------- */
 
   function vai(delta) {
+    stopSpeech();
     const n = cursore + delta;
     if (n < 0 || n >= vista.length) return;
     cursore = n;
@@ -1093,6 +1252,7 @@
   try { avvisoLetto = localStorage.getItem(CHIAVE + "-avviso") === "1"; } catch (err) { /* volatile */ }
   document.getElementById("notice").hidden = avvisoLetto;
 
+  initTts();
   montaFiltri();
   ricalcola(false);
 

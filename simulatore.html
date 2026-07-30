@@ -48,7 +48,7 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--paper);color:var(--text);font-family:var(--font-ui);
   font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
-h1,h2,h3{font-family:var(--font-dis);text-wrap:balance;margin:0;font-weight:600;letter-spacing:-.01em}
+h1,h2,h3{font-family:var(--font-dis);margin:0;font-weight:600;letter-spacing:-.01em}
 button,input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
@@ -377,7 +377,7 @@ td.num{font-family:var(--font-mono);text-align:right;font-variant-numeric:tabula
           <label class="chk"><input type="checkbox" id="f-note"> Con note</label>
           <label class="chk"><input type="checkbox" id="f-ovr"> Modificate da me</label>
         </div>
-        <button class="btn sm" id="f-reset" style="width:100%;margin-top:11px">Azzera filtri</button>
+        <button class="btn sm full" id="f-reset">Azzera filtri</button>
       </div>
       <div class="panel">
         <h3>Sessione</h3>
@@ -395,7 +395,7 @@ td.num{font-family:var(--font-mono);text-align:right;font-variant-numeric:tabula
         <div class="stat"><span>In elenco</span><b id="s-count">0</b></div>
         <div class="stat"><span>Risposte date</span><b id="s-done">0</b></div>
         <div class="stat"><span>Corrette</span><b id="s-ok">0</b></div>
-        <div class="meter"><i id="s-meter" style="width:0%"></i></div>
+        <div class="meter"><i id="s-meter"></i></div>
       </div>
       <div class="panel">
         <h3>Vai alla domanda</h3>
