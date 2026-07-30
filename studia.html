@@ -45,8 +45,8 @@ body{margin:0;background:var(--paper);color:var(--text);font-family:var(--font-u
   font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;
   -webkit-text-size-adjust:100%;text-size-adjust:100%}
 h1,h2,h3{font-family:var(--font-dis);margin:0;font-weight:600;letter-spacing:-.01em;text-wrap:balance}
-button,input,select{font:inherit;color:inherit}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+button,input,select{font:inherit;color:inherit}.voice-select{border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--text-2);padding:10px 12px;font-size:13px;min-width:180px;cursor:pointer}
+.voice-select:disabled{opacity:.65;cursor:default}:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 a{color:var(--accent-2)}
 
@@ -129,6 +129,8 @@ a{color:var(--accent-2)}
   <div class="brand">Studia <span>AZ-104</span></div>
   <div class="top-right">
     <input class="cerca" id="cerca" type="search" placeholder="Cerca nella teoria…" aria-label="Cerca">
+    <button class="btn" id="btn-tts" type="button" title="Ascolta la prima lezione visibile in italiano">🔊 Ascolta</button>
+    <select class="voice-select" id="voice-select" title="Seleziona voce italiana"></select>
     <button class="btn" id="tema" type="button">Tema</button>
   </div>
 </header>
@@ -248,6 +250,163 @@ function disegna(){
       salva(); disegna();
     };
   });
+  main.querySelectorAll(".tts-btn").forEach(b => {
+    b.onclick = () => {
+      const idx = Number(b.dataset.i);
+      speakLesson(idx);
+    };
+  });
+}
+
+const synth = window.speechSynthesis;
+let ttsVoice = null;
+let ttsUtterance = null;
+let ttsActive = false;
+let italianVoices = [];
+
+function formatVoiceName(v) {
+  return `${v.name} (${v.lang})`;
+}
+
+function stripMarkdown(text) {
+  return String(text || "")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/\n+/g, " ")
+    .replace(/ {2,}/g, " ")
+    .trim();
+}
+
+function getTtsText(lezione) {
+  if (!lezione) return "";
+  return `Lezione ${lezione.t}. Concetto: ${stripMarkdown(lezione.c)}. Esempio: ${stripMarkdown(lezione.es)}. All'esame: ${stripMarkdown(lezione.tr)}.`;
+}
+
+function populateVoiceList() {
+  const select = document.getElementById("voice-select");
+  if (!select) return;
+  const voices = synth.getVoices();
+  italianVoices = voices.filter(
+    (v) => /^it(-|$)/i.test(v.lang) || /italian/i.test(v.name.toLowerCase())
+  );
+  if (!italianVoices.length) {
+    italianVoices = voices.filter((v) => /female|femmina|elena|francesca|laura|silvia|giulia|martina|chiara/i.test(v.name.toLowerCase()));
+  }
+  if (!italianVoices.length) {
+    italianVoices = voices;
+  }
+  if (!italianVoices.length) {
+    select.innerHTML = `<option value="">Nessuna voce disponibile</option>`;
+    select.disabled = true;
+    ttsVoice = null;
+    updateTtsButton();
+    return;
+  }
+  select.innerHTML = italianVoices
+    .map((v, i) => `<option value="${i}">${esc(formatVoiceName(v))}</option>`)
+    .join("");
+  select.disabled = false;
+  const preferredIndex = italianVoices.findIndex((v) => /female|femmina|elena|francesca|laura|silvia|giulia|martina|chiara/i.test(v.name.toLowerCase()));
+  select.selectedIndex = preferredIndex >= 0 ? preferredIndex : 0;
+  ttsVoice = italianVoices[select.selectedIndex];
+  updateTtsButton();
+}
+
+function updateTtsButton() {
+  const btn = document.getElementById("btn-tts");
+  if (!btn) return;
+  const supported = window.speechSynthesis && window.SpeechSynthesisUtterance;
+  btn.disabled = !supported || !ttsVoice;
+  btn.classList.toggle("speaking", ttsActive);
+  btn.setAttribute("aria-pressed", String(ttsActive));
+  if (!supported) {
+    btn.title = "Sintesi vocale non supportata da questo browser.";
+    return;
+  }
+  if (!ttsVoice) {
+    btn.title = "Voce italiana non trovata: usa la voce predefinita del browser.";
+    return;
+  }
+  btn.title = ttsActive
+    ? "Interrompi lettura"
+    : `Ascolta la prima lezione visibile con la voce ${ttsVoice.name}`;
+}
+
+function stopSpeech() {
+  if (!window.speechSynthesis) return;
+  synth.cancel();
+  ttsActive = false;
+  ttsUtterance = null;
+  updateTtsButton();
+}
+
+function speakLesson(index) {
+  if (!window.SpeechSynthesisUtterance) return;
+  stopSpeech();
+  const lesson = visibili()[index];
+  if (!lesson) return;
+  const msg = new SpeechSynthesisUtterance(getTtsText(lesson));
+  msg.lang = "it-IT";
+  if (ttsVoice) msg.voice = ttsVoice;
+  msg.rate = 0.95;
+  msg.pitch = 1.05;
+  msg.onend = () => {
+    ttsActive = false;
+    updateTtsButton();
+  };
+  msg.onerror = () => {
+    ttsActive = false;
+    updateTtsButton();
+  };
+  ttsUtterance = msg;
+  ttsActive = true;
+  updateTtsButton();
+  synth.speak(msg);
+}
+
+function speakFirstVisible() {
+  if (!window.SpeechSynthesisUtterance) return;
+  stopSpeech();
+  const lesson = visibili()[0];
+  if (!lesson) return;
+  const msg = new SpeechSynthesisUtterance(getTtsText(lesson));
+  msg.lang = "it-IT";
+  if (ttsVoice) msg.voice = ttsVoice;
+  msg.rate = 0.95;
+  msg.pitch = 1.05;
+  msg.onend = () => {
+    ttsActive = false;
+    updateTtsButton();
+  };
+  msg.onerror = () => {
+    ttsActive = false;
+    updateTtsButton();
+  };
+  ttsUtterance = msg;
+  ttsActive = true;
+  updateTtsButton();
+  synth.speak(msg);
+}
+
+function initTts() {
+  const btn = document.getElementById("btn-tts");
+  const select = document.getElementById("voice-select");
+  if (!window.speechSynthesis || !window.SpeechSynthesisUtterance || !btn || !select) {
+    return;
+  }
+  populateVoiceList();
+  synth.onvoiceschanged = populateVoiceList;
+  setTimeout(populateVoiceList, 100);
+  select.addEventListener("change", (e) => {
+    const idx = Number(e.target.value);
+    if (!Number.isNaN(idx) && italianVoices[idx]) {
+      ttsVoice = italianVoices[idx];
+      updateTtsButton();
+    }
+  });
+  btn.addEventListener("click", () => {
+    if (ttsActive) stopSpeech(); else speakFirstVisible();
+  });
 }
 
 document.getElementById("cerca").addEventListener("input", e => {
@@ -267,5 +426,6 @@ try {
   if(t) document.documentElement.setAttribute("data-theme", t);
 } catch(e){}
 
+initTts();
 disegna();
 </script>
