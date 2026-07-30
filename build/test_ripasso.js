@@ -9,14 +9,31 @@
 const fs = require("fs");
 const path = require("path");
 
-const base = process.argv[2];
-if (!base) {
-  console.error("uso: node test_ripasso.js <cartella AZ-104>");
-  process.exit(1);
-}
+const base = process.argv[2] || path.resolve(__dirname, "..");
 
-const html = fs.readFileSync(path.join(base, "az104_ripasso.html"), "utf8");
-const banca = JSON.parse(fs.readFileSync(path.join(base, "az104_question_bank_it.json"), "utf8"));
+/* Si controlla la pagina PUBBLICATA, quella che index.html collega: ripasso.html
+   nella radice, con la banca in banca/. I nomi lunghi sono il ripiego per una
+   pagina appena costruita e non ancora pubblicata.
+   L'ordine conta: nel repo puo' esistere un az104_ripasso.html rimasto indietro
+   da una build vecchia, e provare quello lascerebbe passare un deploy rotto. */
+const scegli = (...cand) => {
+  const hit = cand.find((p) => fs.existsSync(p));
+  if (!hit) {
+    console.error(`file non trovato, cercato:\n  ${cand.join("\n  ")}`);
+    process.exit(1);
+  }
+  return hit;
+};
+
+const fPagina = scegli(
+  path.join(base, "ripasso.html"),
+  path.join(base, "az104_ripasso.html"));
+const fBanca = scegli(
+  path.join(base, "banca", "az104_question_bank_it.json"),
+  path.join(base, "az104_question_bank_it.json"));
+console.log(`  usa   ${path.basename(fPagina)} contro ${path.relative(base, fBanca)}`);
+const html = fs.readFileSync(fPagina, "utf8");
+const banca = JSON.parse(fs.readFileSync(fBanca, "utf8"));
 
 let errori = 0;
 const ko = (m) => { console.log(`  FAIL  ${m}`); errori++; };
