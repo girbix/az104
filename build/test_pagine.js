@@ -95,6 +95,56 @@ console.log("\ncollegamento simulatore -> teoria");
   }
 }
 
+/* I numeri scritti sulla homepage. Sono a mano dentro l'HTML, e nessuno li
+   ricalcola: quando la banca cresce restano indietro in silenzio. E' gia'
+   successo — il ripasso ha annunciato "532 domande" per settimane mentre ne
+   conteneva 591. Qui si confrontano con quello che le pagine hanno davvero
+   dentro, cosi' la prossima volta lo dice il test e non chi studia. */
+console.log("\nnumeri dichiarati sulla homepage");
+{
+  const idx = fs.readFileSync(path.join(base, "index.html"), "utf8");
+  const stu = fs.readFileSync(path.join(base, "studia.html"), "utf8");
+  const sim = fs.readFileSync(path.join(base, "simulatore.html"), "utf8");
+
+  const conta = (testo, inizio, pezzo) => {
+    const riga = testo.split("\n").find((r) => r.startsWith(inizio));
+    return riga ? riga.split(pezzo).length - 1 : -1;
+  };
+  const lezioni = conta(stu, "const LEZIONI", '{"o":"');
+  const domande = conta(sim, "const BANCA_INCLUSA", '"id":"AZ104-');
+
+  const reale = {
+    lezioni,
+    domande,
+    n: Number((sim.match(/EXAM_N\s*=\s*(\d+)/) || [])[1]),
+    min: Number((sim.match(/EXAM_MIN\s*=\s*(\d+)/) || [])[1]),
+  };
+
+  const atteso = [
+    [reale.lezioni, "lezioni"],
+    [reale.domande, "domande"],
+    [reale.n, "domande estratte dal simulatore"],
+    [reale.min, "minuti d'esame"],
+  ];
+
+  for (const [valore, cosa] of atteso) {
+    if (!Number.isFinite(valore) || valore <= 0) { ko(`non riesco a contare: ${cosa}`); continue; }
+    /* il numero deve comparire come numero intero, non dentro un altro numero */
+    const trovato = new RegExp("(?<!\\d)" + valore + "(?!\\d)").test(idx);
+    trovato ? ok(`${valore} ${cosa}`)
+            : ko(`la homepage non dice ${valore} ${cosa}: il numero e' cambiato e il testo no`);
+  }
+
+  /* numeri sulla homepage che non corrispondono a niente di reale */
+  const noti = new Set(atteso.map(([v]) => String(v)).concat(["104", "1000", "700", "82", "17", "2026"]));
+  const corpo = idx.slice(idx.indexOf("</style>"));
+  const sospetti = [...new Set([...corpo.matchAll(/(?<![\w.-])(\d{2,4})(?![\w.-])/g)].map((m) => m[1]))]
+    .filter((n) => !noti.has(n));
+  sospetti.length === 0
+    ? ok("nessun numero orfano nel testo")
+    : ko(`numeri che non tornano con niente: ${sospetti.join(", ")}`);
+}
+
 console.log(errori === 0 ? "\nTutto verde: le pagine sono integre."
                          : `\n${errori} problemi.`);
 process.exit(errori ? 1 : 0);
