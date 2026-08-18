@@ -142,6 +142,7 @@ node test_widget.js        # ogni domanda si disegna, valutata e non
 node test_ascolto.js       # voci offerte per l'ascolto e taglio in frasi
 node test_ripasso.js       # payload del ripasso vs banca
 node test_bank.js          # la risposta giusta viene contata giusta
+node test_pagine.js        # pagine integre, il giro fra le tre, i numeri della home
 ```
 
 Escono tutti con codice diverso da zero se trovano qualcosa, così si incatenano in un hook o in
@@ -177,8 +178,8 @@ hanno una verifica indipendente**.
 ## Contribuire
 
 Se trovi una risposta sbagliata, apri una issue citando l'id della domanda (`AZ104-0042`) e la
-pagina Learn che lo prova. Le correzioni vanno fatte in **entrambe** le banche, stesso id, per non
-farle divergere.
+pagina Learn che lo prova. La correzione va fatta in `banca/az104_question_bank_it.json`, poi
+`python build_pagine.py` la porta dentro le pagine.
 
 **La priorità è la verifica, non il volume:** il target di 500 domande è superato, non servono
 domande nuove — servono domande verificate.
