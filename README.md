@@ -129,6 +129,7 @@ node test_ascolto.js       # voci offerte per l'ascolto e taglio in frasi
 node test_ripasso.js       # payload del ripasso vs banca
 node test_bank.js          # la risposta giusta viene contata giusta
 node test_pagine.js        # pagine integre, il giro fra le tre, i numeri della home
+node test_ricomincia.js    # la barra c'è ovunque, e Ricomincia cancella solo quello che dice
 ```
 
 </details>
