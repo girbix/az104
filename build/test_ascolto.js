@@ -4,8 +4,10 @@
  *
  * Non puo' verificare che la voce esca dagli altoparlanti. Verifica le due
  * decisioni che si possono sbagliare in silenzio: quali voci vengono offerte
- * (e in che ordine) e come il testo viene spezzato in frasi. Se il taglio
- * sbaglia, l'evidenziazione salta e la lettura si interrompe a meta'.
+ * (e in che ordine), come il testo viene spezzato in frasi, e in che stato
+ * finisce ogni lezione dopo che l'hai ascoltata. Se il taglio sbaglia,
+ * l'evidenziazione salta e la lettura si interrompe a meta'; se lo stato
+ * sbaglia, la tabella consiglia di ripassare la lezione sbagliata.
  */
 const fs = require("fs"), path = require("path"), vm = require("vm");
 
@@ -133,6 +135,105 @@ console.log("\nComandi nella pagina:");
  ["stato da ascoltare", /da ascoltare/], ["stato riascolta", /↻ Riascolta/]
 ].forEach(([nome, re]) => re.test(html) ? ok(nome) : ko(`manca: ${nome}`));
 
-console.log(errori === 0 ? "\nTutto verde: selezione voci e taglio in frasi coerenti."
+/* ---- 7. lo stato di ogni lezione, e la tabella che lo riassume ----
+   Tre stati che si escludono: mai ascoltata, ascoltata di recente, da
+   riprendere. Se il confine fra gli ultimi due si sposta, la tabella continua
+   a mostrare numeri plausibili e a mentire: nessun errore, solo consigli
+   sbagliati su cosa ripassare. Qui la tabella viene disegnata davvero, su
+   quattro situazioni, e si contano le celle. */
+console.log("\nStato delle lezioni:");
+{
+  const pezzo = (nome) => {
+    const i = html.indexOf("function " + nome + "(");
+    if (i < 0) { ko(`manca ${nome}()`); return ""; }
+    let liv = 0, dentro = false;
+    for (let k = i; k < html.length; k++) {
+      if (html[k] === "{") { liv++; dentro = true; }
+      else if (html[k] === "}") { liv--; if (dentro && liv === 0) return html.slice(i, k + 1); }
+    }
+    return "";
+  };
+  const riga = (inizio) => html.split("\n").find((r) => r.startsWith(inizio)) || "";
+  const domIT = html.slice(html.indexOf("const DOM_IT"), html.indexOf("};", html.indexOf("const DOM_IT")) + 2);
+
+  let out = "";
+  const c = {
+    document: {
+      getElementById: (id) => (id === "prog" ? { set innerHTML(v) { out = v; } } : { set onclick(f) {} }),
+    },
+    esc: (s) => String(s),
+    console, Date, Math, Object, JSON, String, setTimeout,
+  };
+  c.globalThis = c;
+  vm.createContext(c);
+  vm.runInContext([riga("const LEZIONI"), domIT, riga("const RIPRESA"),
+    pezzo("statoLezione"), pezzo("giorniDa"), pezzo("quando"),
+    pezzo("prossima"), pezzo("disegnaProgresso")]
+    .join("\n").replace(/^const /gm, "var "), c);
+
+  const LEZ = c.LEZIONI, GG = 86400000, N = LEZ.length;
+  const disegna = (ascolti, ultimo, fatte) => {
+    c.ascolti = ascolti; c.ultimo = ultimo; c.fatte = fatte || {};
+    c.disegnaProgresso();
+    const tf = out.slice(out.indexOf("<tfoot>"));
+    const num = (classe) => {
+      const m = tf.match(new RegExp('class="' + classe + '">([^<]*)<'));
+      return !m ? -1 : m[1] === "—" ? 0 : Number(m[1]);
+    };
+    return {
+      mai: num("st-mai"), recente: num("st-recente"), riprendere: num("st-riprendere"),
+      perc: Number((tf.match(/<b>(\d+)%<\/b>/) || [])[1]),
+      testo: out.replace(/<[^>]+>/g, " ").replace(/\s+/g, " "),
+    };
+  };
+  const tutte = (giorniFa) => {
+    const a = {}, u = {};
+    LEZ.forEach((l) => { a[l.o] = 1; if (giorniFa !== null) u[l.o] = Date.now() - giorniFa * GG; });
+    return [a, u];
+  };
+  const prova = (nome, r, atteso) => {
+    const male = Object.keys(atteso).filter((k) => r[k] !== atteso[k]);
+    male.length === 0
+      ? ok(nome)
+      : ko(`${nome}: ${male.map((k) => `${k}=${r[k]} invece di ${atteso[k]}`).join(", ")}`);
+  };
+
+  let r = disegna({}, {});
+  prova("primo giorno: tutte da ascoltare", r, { mai: N, recente: 0, riprendere: 0, perc: 0 });
+  /(mai aperto|Mai ascoltate)/.test(r.testo) ? ok("primo giorno: dice da dove partire")
+                                             : ko("primo giorno: non dice da dove partire");
+
+  r = disegna(...tutte(1));
+  prova("ascoltate ieri: tutte recenti", r, { mai: 0, recente: N, riprendere: 0, perc: 100 });
+  /Ascoltate tutte/.test(r.testo) ? ok("ascoltate ieri: non propone niente da riprendere")
+                                  : ko("ascoltate ieri: propone qualcosa da riprendere lo stesso");
+
+  r = disegna(...tutte(30));
+  prova("ascoltate un mese fa: tutte da riprendere", r, { mai: 0, recente: 0, riprendere: N, perc: 100 });
+  /ascoltata 30 giorni fa/.test(r.testo) ? ok("un mese fa: dice quanto tempo e' passato")
+                                         : ko("un mese fa: non dice quanto tempo e' passato");
+
+  /* il confine: RIPRESA giorni esatti sta gia' fra quelle da riprendere */
+  const R = c.RIPRESA;
+  prova(`confine: ${R - 1} giorni e' ancora recente`, disegna(...tutte(R - 1)), { recente: N, riprendere: 0 });
+  prova(`confine: ${R} giorni va ripresa`, disegna(...tutte(R)), { recente: 0, riprendere: N });
+
+  /* dati nati prima della data: il numero c'e', il quando no */
+  r = disegna(...tutte(null));
+  prova("conteggio senza data: prudente, da riprendere", r, { mai: 0, recente: 0, riprendere: N });
+  /giorni fa|null/.test(r.testo) ? ko("conteggio senza data: si inventa quando l'hai ascoltata")
+                                 : ok("conteggio senza data: non si inventa il quando");
+
+  /* le tre colonne devono sempre coprire tutte le lezioni, senza doppioni */
+  const meta = {}, mu = {};
+  LEZ.slice(0, 20).forEach((l) => { meta[l.o] = 1; mu[l.o] = Date.now() - 2 * GG; });
+  LEZ.slice(20, 35).forEach((l) => { meta[l.o] = 1; mu[l.o] = Date.now() - 40 * GG; });
+  r = disegna(meta, mu);
+  r.mai + r.recente + r.riprendere === N
+    ? ok(`le tre colonne coprono tutte e ${N} le lezioni`)
+    : ko(`le colonne sommano ${r.mai + r.recente + r.riprendere} invece di ${N}`);
+}
+
+console.log(errori === 0 ? "\nTutto verde: voci, taglio in frasi e stato delle lezioni coerenti."
                          : `\n${errori} problemi.`);
 process.exit(errori ? 1 : 0);

@@ -139,25 +139,45 @@ a{color:var(--accent-2)}
   .cerca{width:150px}
   .brand{font-size:13px}
 }
+/* ---------- stato di ogni lezione nell'indice ----------
+   Una barretta a sinistra della voce: si vede scorrendo, senza tornare su
+   alla tabella. box-shadow e non border, che sposterebbe il testo. */
+.nav-l.st-mai{box-shadow:inset 3px 0 0 var(--line)}
+.nav-l.st-recente{box-shadow:inset 3px 0 0 var(--good)}
+.nav-l.st-riprendere{box-shadow:inset 3px 0 0 var(--signal)}
+
 /* ---------- tabella dei progressi ---------- */
-.prog{width:100%;border-collapse:collapse;margin-top:15px;font-size:13.5px}
+.tab-wrap{margin-top:15px;overflow-x:auto}
+.prog{width:100%;border-collapse:collapse;font-size:13.5px}
 .prog caption{text-align:left;font-family:var(--font-dis);font-weight:600;font-size:14px;
   color:var(--text);padding-bottom:7px}
-.prog th,.prog td{padding:6px 8px;text-align:right;border-bottom:1px solid var(--line-2)}
-.prog thead th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;
+.prog th,.prog td{padding:6px 8px;text-align:right;border-bottom:1px solid var(--line-2);
+  white-space:nowrap}
+.prog thead th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;
   color:var(--text-3);font-weight:600}
-.prog th[scope=row]{text-align:left;font-weight:500;color:var(--text-2);white-space:nowrap}
+.prog th[scope=row]{text-align:left;font-weight:500;color:var(--text-2)}
 .prog tfoot th[scope=row],.prog tfoot td{font-weight:700;color:var(--text);
   border-bottom:0;border-top:1px solid var(--line)}
-.prog td.p{white-space:nowrap}
-.prog .barra{display:inline-block;vertical-align:middle;width:58px;height:6px;margin-right:8px;
+.prog td.st-mai{color:var(--text-3)}
+.prog td.st-recente{color:var(--good);font-weight:600}
+.prog td.st-riprendere{color:var(--signal);font-weight:600}
+.prog td.st-studiate{color:var(--accent)}
+.prog .barra{display:inline-block;vertical-align:middle;width:52px;height:6px;margin-right:8px;
   background:var(--line-2);border-radius:3px;overflow:hidden}
 .prog .barra i{display:block;height:100%;background:var(--accent);border-radius:3px}
 .prog tfoot .barra i{background:var(--good)}
+.intro .legenda{display:flex;flex-wrap:wrap;align-items:center;gap:5px 14px;margin-top:10px;
+  font-size:12px;color:var(--text-3)}
+.legenda .sp{width:10px;height:10px;border-radius:2px;margin-right:-8px}
+.legenda .st-mai{background:var(--line)}
+.legenda .st-recente{background:var(--good)}
+.legenda .st-riprendere{background:var(--signal)}
 .intro .prog-f{margin-top:9px;font-size:12.5px;color:var(--text-3)}
+.intro .prog-f strong{color:var(--text-2)}
 .link{background:none;border:0;padding:0;font:inherit;color:var(--accent);cursor:pointer;
   text-decoration:underline}
 @media (max-width:560px){.prog .barra{display:none}}
+
 /* ---------- barra di sito ----------
    Uguale su tutte e quattro le pagine: da qualunque punto si torna alla home o
    si passa a un'altra sezione. Sta sopra l'header della pagina, che infatti si
@@ -212,11 +232,14 @@ const DOM_IT = {
 /* progressi: quali lezioni hai segnato come studiate e quante volte le hai
    ascoltate, in locale */
 const K = "az104:teoria", K_A = "az104:teoria:ascolti", K_V = "az104:teoria:voce";
-let fatte = {}, ascolti = {};
+const K_U = "az104:teoria:ultimo";
+let fatte = {}, ascolti = {}, ultimo = {};
 try { fatte = JSON.parse(localStorage.getItem(K) || "{}"); } catch(e){ fatte = {}; }
 try { ascolti = JSON.parse(localStorage.getItem(K_A) || "{}"); } catch(e){ ascolti = {}; }
+try { ultimo = JSON.parse(localStorage.getItem(K_U) || "{}"); } catch(e){ ultimo = {}; }
 const salva = () => { try { localStorage.setItem(K, JSON.stringify(fatte)); } catch(e){} };
 const salvaA = () => { try { localStorage.setItem(K_A, JSON.stringify(ascolti)); } catch(e){} };
+const salvaU = () => { try { localStorage.setItem(K_U, JSON.stringify(ultimo)); } catch(e){} };
 
 const esc = s => String(s == null ? "" : s)
   .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
@@ -354,7 +377,9 @@ function parla(){
     if(ora){
       const l = LEZIONI[ora.i];
       ascolti[l.o] = (ascolti[l.o] || 0) + 1;
+      ultimo[l.o] = Date.now();
       salvaA();
+      salvaU();
       ora = null;
       pulisci();
       aggiornaAudio();
@@ -461,7 +486,8 @@ function disegnaRail(){
       domCorrente = l.d;
       html += '<div class="dom-h">' + esc(DOM_IT[l.d]) + "</div>";
     }
-    html += '<button class="nav-l' + (fatte[l.o] ? " fatta" : "") + '" data-i="' + i + '">' +
+    html += '<button class="nav-l st-' + statoLezione(l) + (fatte[l.o] ? " fatta" : "") +
+            '" data-i="' + i + '">' +
             esc(l.t) + "</button>";
   });
   rail.innerHTML = html || '<p class="vuoto">Nessun risultato.</p>';
@@ -473,54 +499,140 @@ function disegnaRail(){
   });
 }
 
+/* Lo stato d'ascolto di una lezione. Tre stati che si escludono, cosi' le
+   colonne della tabella sommano sempre al totale:
+
+     mai         non l'hai mai fatta leggere
+     recente     ascoltata negli ultimi RIPRESA giorni
+     riprendere  ascoltata prima di allora, e da allora piu' niente
+
+   Il conteggio degli ascolti c'era gia' prima della data, quindi i dati
+   vecchi hanno il numero ma non il quando: senza data la lezione finisce fra
+   quelle da riprendere, che e' l'ipotesi prudente. */
+const RIPRESA = 14, GIORNO = 86400000;
+
+function statoLezione(l){
+  if(!ascolti[l.o]) return "mai";
+  const t = ultimo[l.o];
+  return t && Date.now() - t < RIPRESA * GIORNO ? "recente" : "riprendere";
+}
+
+function giorniDa(o){
+  const t = ultimo[o];
+  return t ? Math.floor((Date.now() - t) / GIORNO) : null;
+}
+
+/* Il conteggio degli ascolti e' nato senza la data: per le lezioni ascoltate
+   prima di questa versione non si puo' dire quando, e dirlo storto sarebbe
+   peggio che tacere. */
+function quando(o){
+  const g = giorniDa(o);
+  if(g === null) return "";
+  if(g === 0) return ", ascoltata oggi";
+  return ", ascoltata " + g + (g === 1 ? " giorno fa" : " giorni fa");
+}
+
+/* La prima lezione su cui tornare: prima quelle lasciate indietro, poi quelle
+   mai aperte. In ordine di study guide, cosi' si segue il programma invece di
+   saltare da un dominio all'altro. */
+function prossima(){
+  return LEZIONI.find(l => statoLezione(l) === "riprendere") ||
+         LEZIONI.find(l => statoLezione(l) === "mai") || null;
+}
+
+function vaiA(l){
+  /* Con un filtro attivo la lezione puo' non essere a video: tolgo il filtro,
+     altrimenti il pulsante non fa niente e sembra rotto. */
+  if(!visibili().includes(l)){
+    filtro = "";
+    const c = document.getElementById("cerca");
+    if(c) c.value = "";
+    disegna();
+  }
+  const i = visibili().indexOf(l);
+  const card = document.getElementById("lez-" + i);
+  if(!card) return;
+  card.scrollIntoView({ behavior:"smooth", block:"start" });
+  card.classList.add("puntata");
+  setTimeout(() => card.classList.remove("puntata"), 2600);
+}
+
 /* A che punto sei, dominio per dominio.
-   Prima era una frase con due numeri dentro ("30 di 82 segnate come studiate"):
-   andava riletta ogni volta per capire quanto mancava, e dell'ascolto non
-   diceva niente. Si aggiorna sul posto, senza ridisegnare la pagina, perche'
-   un redraw mentre una lezione viene letta la interromperebbe. */
+   Prima era una frase con due numeri dentro ("30 di 82 segnate come
+   studiate"): andava riletta ogni volta per capire quanto mancava, e non
+   distingueva una lezione ascoltata ieri da una ascoltata un mese fa.
+   Si aggiorna sul posto, senza ridisegnare la pagina, perche' un redraw
+   mentre una lezione viene letta la interromperebbe. */
 function disegnaProgresso(){
   const box = document.getElementById("prog");
   if(!box) return;
 
-  const conta = lez => ({
-    n: lez.length,
-    studiate: lez.filter(l => fatte[l.o]).length,
-    ascoltate: lez.filter(l => ascolti[l.o]).length,
-    volte: lez.reduce((s, l) => s + (ascolti[l.o] || 0), 0)
-  });
+  const conta = lez => {
+    const s = { n: lez.length, mai: 0, recente: 0, riprendere: 0, studiate: 0, volte: 0 };
+    lez.forEach(l => {
+      s[statoLezione(l)]++;
+      if(fatte[l.o]) s.studiate++;
+      s.volte += ascolti[l.o] || 0;
+    });
+    return s;
+  };
   const righe = [1, 2, 3, 4, 5].map(d => ({
     nome: DOM_IT[d], ...conta(LEZIONI.filter(l => l.d === d))
   }));
   const tot = conta(LEZIONI);
 
-  const perc = r => r.n ? Math.round(r.ascoltate / r.n * 100) : 0;
-  const barra = r => '<td class="p"><span class="barra"><i style="width:' + perc(r) +
-    '%"></i></span><b>' + perc(r) + "%</b></td>";
-  const riga = (r, tag) => "<tr><" + tag + ' scope="row">' + esc(r.nome) + "</" + tag + ">" +
-    "<td>" + r.n + "</td><td>" + r.studiate + "</td><td>" + r.ascoltate + "</td>" +
-    barra(r) + "</tr>";
+  const perc = r => r.n ? Math.round((r.recente + r.riprendere) / r.n * 100) : 0;
+  const cifra = (v, classe) => '<td class="' + classe + '">' + (v || "—") + "</td>";
+  const riga = r =>
+    '<tr><th scope="row">' + esc(r.nome) + "</th>" +
+    "<td>" + r.n + "</td>" +
+    cifra(r.mai, "st-mai") +
+    cifra(r.recente, "st-recente") +
+    cifra(r.riprendere, "st-riprendere") +
+    cifra(r.studiate, "st-studiate") +
+    '<td class="p"><span class="barra"><i style="width:' + perc(r) + '%"></i></span>' +
+    "<b>" + perc(r) + "%</b></td></tr>";
+
+  const p = prossima();
+  const q = p ? statoLezione(p) : null;
 
   box.innerHTML =
-    '<table class="prog"><caption>A che punto sei</caption>' +
-    "<thead><tr><th>Dominio</th><th>Lezioni</th><th>Studiate</th><th>Ascoltate</th>" +
-    "<th>% ascoltate</th></tr></thead>" +
-    "<tbody>" + righe.map(r => riga(r, "th")).join("") + "</tbody>" +
-    "<tfoot>" + riga({ nome: "Totale", ...tot }, "th") + "</tfoot></table>" +
+    '<div class="tab-wrap"><table class="prog"><caption>A che punto sei</caption>' +
+    "<thead><tr><th>Dominio</th><th>Lezioni</th><th>Mai ascoltate</th>" +
+    "<th>Recenti</th><th>Da riprendere</th><th>Studiate</th><th>% ascoltate</th>" +
+    "</tr></thead><tbody>" + righe.map(riga).join("") + "</tbody>" +
+    "<tfoot>" + riga({ nome: "Totale", ...tot }) + "</tfoot></table></div>" +
+
+    '<p class="legenda">' +
+    '<span class="sp st-mai"></span>mai ascoltata' +
+    '<span class="sp st-recente"></span>ascoltata negli ultimi ' + RIPRESA + " giorni" +
+    '<span class="sp st-riprendere"></span>da riprendere, ascoltata prima' +
+    "</p>" +
+
     '<p class="prog-f">' +
-    (tot.volte ? "In tutto " + tot.volte + (tot.volte === 1 ? " ascolto." : " ascolti.")
-               : "Nessuna lezione ascoltata, per ora.") +
-    ' <button class="link" type="button" id="azzera-teoria">Azzera studiate e ascolti</button></p>';
+    (p ? (q === "riprendere"
+            ? "Hai lasciato indietro <strong>" + esc(p.t) + "</strong>" + quando(p.o) + ". "
+            : "La prima che non hai mai aperto e' <strong>" + esc(p.t) + "</strong>. ") +
+         '<button class="link" type="button" id="riprendi">Riprendi da qui</button>'
+       : "Ascoltate tutte e " + tot.n + " le lezioni negli ultimi " + RIPRESA + " giorni. ") +
+    (tot.volte ? " · " + tot.volte + (tot.volte === 1 ? " ascolto in tutto." : " ascolti in tutto.") : "") +
+    ' <button class="link" type="button" id="azzera-teoria">Azzera</button></p>';
+
+  const rip = document.getElementById("riprendi");
+  if(rip) rip.onclick = () => { const l = prossima(); if(l) vaiA(l); };
 
   document.getElementById("azzera-teoria").onclick = () => {
     const messaggio = "Azzerare i progressi della teoria?" +
       String.fromCharCode(10, 10) +
-      "Si perdono le lezioni segnate come studiate e il conto degli ascolti. " +
+      "Si perdono le lezioni segnate come studiate, il conto degli ascolti e le date. " +
       "Le domande non vengono toccate: per quelle c'e' Ricomincia nella barra in alto.";
     if(!confirm(messaggio)) return;
     fatte = {};
     ascolti = {};
+    ultimo = {};
     salva();
     salvaA();
+    salvaU();
     disegna();
   };
 }
