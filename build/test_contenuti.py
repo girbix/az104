@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Controlla i contenuti: banche domande, allineamento EN/IT, CSV per Anki.
+"""Controlla i contenuti: banca domande e CSV per Anki.
 
     python test_contenuti.py ["<cartella repo>"]
 
 I test in JavaScript coprono la *valutazione* (la risposta giusta viene contata
 giusta). Questo copre i *dati*: chiavi che puntano a opzioni inesistenti, hotspot
-con menu irrisolvibili, sì/No spaiati, campi mancanti, banche che divergono,
+con menu irrisolvibili, sì/No spaiati, campi mancanti,
 CSV che Anki spezzerebbe sul separatore.
 
 Esce con codice 1 se trova qualcosa.
@@ -262,51 +262,6 @@ def audit(banca, tag):
                 P(f"{tag}: terminologia ritirata nel testo della domanda", qid, nome)
 
 
-def confronta(EN, IT):
-    if [q["id"] for q in EN] != [q["id"] for q in IT]:
-        P("allineamento: sequenza di id diversa", "-",
-          f"EN {len(EN)} / IT {len(IT)}")
-    mIT = {q["id"]: q for q in IT}
-    for q in EN:
-        it = mIT.get(q["id"])
-        if not it:
-            P("allineamento: id assente nella banca IT", q["id"])
-            continue
-        chiavi = ["tipo", "dominio", "sotto_argomento", "risposta_corretta",
-                  "stato", "difficolta", "url_riferimento", "is_generated"]
-        # Nelle hotspot la chiave contiene i VALORI dei menu, non le lettere:
-        # se le scelte sono tradotte la chiave italiana deve seguirle, quindi
-        # divergere e' corretto. Che si risolva davvero lo verifica l'audit per
-        # banca qui sopra; qui basta accertarsi che non sia rimasta indietro.
-        if q.get("tipo") == "hotspot":
-            chiavi.remove("risposta_corretta")
-            if it.get("risposta_corretta") == q.get("risposta_corretta"):
-                menu_it = hotspot_menu(it)
-                tradotto = any(
-                    ch_it and ch_en and [norm(x) for x in ch_it] != [norm(x) for x in ch_en]
-                    for (_, _, ch_en), (_, _, ch_it) in zip(hotspot_menu(q), menu_it))
-                if tradotto:
-                    P("allineamento: chiave hotspot IT non segue le scelte tradotte", q["id"],
-                      "rilancia chiavi_hotspot_it.py")
-        for c in chiavi:
-            if str(q.get(c)) != str(it.get(c)):
-                P("allineamento: campo tecnico divergente", q["id"],
-                  f"{c}: EN={q.get(c)!r} IT={it.get(c)!r}")
-        if len(opzioni(q)) != len(opzioni(it)):
-            P("allineamento: numero di opzioni diverso", q["id"],
-              f"EN {len(opzioni(q))} / IT {len(opzioni(it))}")
-        if q.get("tipo") == "hotspot":
-            me, mi = hotspot_menu(q), hotspot_menu(it)
-            if len(me) == len(mi):
-                for (ce, _, che), (_, _, chi) in zip(me, mi):
-                    if (che is None) != (chi is None):
-                        P("allineamento: menu hotspot perso nella traduzione", q["id"],
-                          f"menu {ce}")
-                    elif che and chi and len(che) != len(chi):
-                        P("allineamento: scelte hotspot in numero diverso", q["id"],
-                          f"menu {ce}: EN {len(che)} / IT {len(chi)}")
-
-
 def duplicati(banca):
     visti = {}
     for q in banca:
@@ -350,35 +305,31 @@ def csv_anki(cartella):
 
 
 def main():
-    banca = BASE / "banca"
-    EN = json.loads((banca / "az104_question_bank.json").read_text("utf-8"))
-    IT = json.loads((banca / "az104_question_bank_it.json").read_text("utf-8"))
+    IT = json.loads((BASE / "banca" / "az104_question_bank_it.json").read_text("utf-8"))
 
-    audit(EN, "EN")
-    audit(IT, "IT")
-    confronta(EN, IT)
-    duplicati(EN)
+    audit(IT, "banca")
+    duplicati(IT)
     csv_anki(BASE / "flashcards")
 
-    print(f"Banca EN {len(EN)} domande · banca IT {len(IT)} domande\n")
-    dom = Counter(q["dominio"] for q in EN)
+    print(f"Banca {len(IT)} domande" + chr(10))
+    dom = Counter(q["dominio"] for q in IT)
     for d in DOMINI:
         n, (lo, hi) = dom[d], PESI_UFFICIALI[d]
-        p = n / len(EN) * 100
+        p = n / len(IT) * 100
         segno = "  " if lo <= p <= hi else "!!"
         print(f"  {n:4d}  {p:5.1f}%  {segno}  (uff. {lo}-{hi}%)  {d}")
         if not lo <= p <= hi:
             P("copertura fuori dai pesi ufficiali", d, f"{p:.1f}% invece di {lo}-{hi}%")
 
-    print(f"\n  tipi:        {dict(Counter(q['tipo'] for q in EN))}")
-    print(f"  stati:       {dict(Counter(q['stato'] for q in EN))}")
-    print(f"  difficoltà:  {dict(Counter(q['difficolta'] for q in EN))}")
-    print(f"  sotto-arg.:  {len(set(q['sotto_argomento'] for q in EN))} distinti")
+    print(f"\n  tipi:        {dict(Counter(q['tipo'] for q in IT))}")
+    print(f"  stati:       {dict(Counter(q['stato'] for q in IT))}")
+    print(f"  difficoltà:  {dict(Counter(q['difficolta'] for q in IT))}")
+    print(f"  sotto-arg.:  {len(set(q['sotto_argomento'] for q in IT))} distinti")
 
     tot = sum(len(v) for v in problemi.values())
     print()
     if not tot:
-        print("Tutto verde: banche, allineamento e CSV senza problemi.")
+        print("Tutto verde: banca e CSV senza problemi.")
         return 0
     print(f"{tot} problemi:\n")
     for cat in sorted(problemi, key=lambda c: -len(problemi[c])):

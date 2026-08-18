@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Aggiunge i lotti di banca/sorgenti/nuove/ alle due banche, in coda.
+"""Aggiunge i lotti di banca/sorgenti/nuove/ alla banca, in coda.
 
     python aggiungi_domande.py [--scrivi] ["<cartella repo>"]
-
-I lotti nuovi tengono inglese e italiano nello stesso record (campo e campo_it):
-si scrivono una volta sola e non possono divergere per distrazione. Qui vengono
-sdoppiati nelle due banche.
 
 Gli id si assegnano in coda e non si riusano mai: note, correzioni e progressi
 salvati dagli utenti sono indicizzati per id, e rinumerare li spezzerebbe tutti.
@@ -27,7 +23,6 @@ argv = [a for a in sys.argv[1:] if a != "--scrivi"]
 BASE = Path(argv[0]) if argv else Path(__file__).resolve().parent.parent
 
 NUOVE = BASE / "banca" / "sorgenti" / "nuove"
-P_EN = BASE / "banca" / "az104_question_bank.json"
 P_IT = BASE / "banca" / "az104_question_bank_it.json"
 
 TESTO = ["domanda", "opzione_a", "opzione_b", "opzione_c", "opzione_d", "opzione_e", "spiegazione"]
@@ -35,13 +30,13 @@ TECNICI = ["dominio", "sotto_argomento", "tipo", "risposta_corretta", "url_rifer
            "difficolta", "tags"]
 
 
-def scheletro(q, qid, lingua):
-    """Costruisce un record di banca completo, nella lingua richiesta."""
+def scheletro(q, qid):
+    """Costruisce un record di banca completo."""
     out = {"id": qid}
     for c in ("dominio", "sotto_argomento", "tipo"):
         out[c] = q[c]
     for c in TESTO:
-        out[c] = (q.get(c + "_it") if lingua == "it" else q.get(c)) or ""
+        out[c] = q.get(c) or ""
     out["risposta_corretta"] = q["risposta_corretta"]
     out["url_riferimento"] = q["url_riferimento"]
     out["fonte"] = "Microsoft Learn"
@@ -62,11 +57,6 @@ def controlla(q, dove, problemi):
         problemi.append(f"{qid}: sotto_argomento fuori tassonomia -> {q['sotto_argomento']}")
     elif dominio_di(q["sotto_argomento"]) != q["dominio"]:
         problemi.append(f"{qid}: dominio non coerente con il sotto_argomento")
-    for c in TESTO:
-        if c == "opzione_e" and not (q.get(c) or "").strip():
-            continue
-        if (q.get(c) or "").strip() and not (q.get(c + "_it") or "").strip():
-            problemi.append(f"{qid}: manca la traduzione di {c}")
     for c in TECNICI:
         if c not in q:
             problemi.append(f"{qid}: manca il campo {c}")
@@ -100,23 +90,19 @@ def main():
             print(f"   - {x}")
         sys.exit(1)
 
-    EN = json.loads(P_EN.read_text("utf-8"))
     IT = json.loads(P_IT.read_text("utf-8"))
-    if len(EN) != len(IT):
-        sys.exit("le banche non sono allineate: sistemale prima")
 
-    esistenti = {q["id"] for q in EN}
+    esistenti = {q["id"] for q in IT}
     prossimo = max(int(i.split("-")[1]) for i in esistenti) + 1
 
     for q in nuove:
         qid = f"AZ104-{prossimo:04d}"
         prossimo += 1
-        EN.append(scheletro(q, qid, "en"))
-        IT.append(scheletro(q, qid, "it"))
+        IT.append(scheletro(q, qid))
 
-    print(f"\n  aggiunte {len(nuove)} domande -> {len(EN)} totali")
+    print(f"\n  aggiunte {len(nuove)} domande -> {len(IT)} totali")
 
-    dom = Counter(q["dominio"] for q in EN)
+    dom = Counter(q["dominio"] for q in IT)
     BANDE = {"Manage Azure identities and governance": (20, 25),
              "Implement and manage storage": (15, 20),
              "Deploy and manage Azure compute resources": (20, 25),
@@ -125,14 +111,14 @@ def main():
     print("\n  copertura per dominio:")
     fuori = False
     for d, (lo, hi) in BANDE.items():
-        p = dom[d] / len(EN) * 100
+        p = dom[d] / len(IT) * 100
         ok = lo <= p <= hi
         fuori = fuori or not ok
         print(f"    {dom[d]:4d}  {p:5.1f}%  {'  ' if ok else '!!'}  (uff. {lo}-{hi}%)  {d}")
     if fuori:
         print("\n  ATTENZIONE: un dominio esce dalla sua banda ufficiale.")
 
-    sotto = Counter(q["sotto_argomento"] for q in EN)
+    sotto = Counter(q["sotto_argomento"] for q in IT)
     scoperti = [s for s in TUTTI if sotto[s] == 0]
     sottili = sorted([(sotto[s], s) for s in TUTTI if 0 < sotto[s] < 4])
     print(f"\n  obiettivi a copertura zero: {len(scoperti)}")
@@ -143,9 +129,8 @@ def main():
         print(f"      {n}  {s}")
 
     if SCRIVI:
-        P_EN.write_text(json.dumps(EN, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
         P_IT.write_text(json.dumps(IT, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-        print(f"\nscritte entrambe le banche ({len(EN)} domande)")
+        print(f"\nscritta la banca ({len(IT)} domande)")
         for p in lotti:
             p.rename(p.with_suffix(".json.aggiunto"))
         print("lotti rinominati in .aggiunto per non riaggiungerli")

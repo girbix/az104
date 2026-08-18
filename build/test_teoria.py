@@ -94,7 +94,7 @@ def main():
                 ko(f"{p.name}: ordine diverso dalla study guide")
 
     # coerenza con la banca domande
-    banca = BASE / "banca" / "az104_question_bank.json"
+    banca = BASE / "banca" / "az104_question_bank_it.json"
     if banca.exists():
         B = json.loads(banca.read_text("utf-8"))
         sotto = {q["sotto_argomento"] for q in B}

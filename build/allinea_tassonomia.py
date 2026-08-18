@@ -24,23 +24,11 @@ argv = [a for a in sys.argv[1:] if a != "--scrivi"]
 SCRIVI = "--scrivi" in sys.argv
 BASE = Path(argv[0]) if argv else Path(__file__).resolve().parent.parent
 
-BANCHE = [
-    BASE / "banca" / "az104_question_bank.json",
-    BASE / "banca" / "az104_question_bank_it.json",
-]
+BANCA = BASE / "banca" / "az104_question_bank_it.json"
 
 
 def main():
-    banche = [(p, json.loads(p.read_text("utf-8"))) for p in BANCHE]
-
-    # Le due banche devono partire allineate, altrimenti la riscrittura le separa.
-    a, b = banche[0][1], banche[1][1]
-    coppie = list(zip(a, b))
-    disallineate = [x["id"] for x, y in coppie
-                    if x["id"] != y["id"] or x["sotto_argomento"] != y["sotto_argomento"]]
-    if len(a) != len(b) or disallineate:
-        sys.exit(f"ERRORE: le banche non sono allineate ({len(disallineate)} divergenze). "
-                 "Sistemale prima di riscrivere la tassonomia.")
+    banche = [(BANCA, json.loads(BANCA.read_text("utf-8")))]
 
     cambi = Counter()
     sconosciuti = Counter()
@@ -59,16 +47,16 @@ def main():
                 print(f"  !! {q['id']}: '{q['sotto_argomento']}' appartiene a "
                       f"'{atteso}' ma la domanda è in '{q['dominio']}'")
 
-    print("RINOMINE (per banca, x2 in totale)")
+    print("RINOMINE")
     for (v, n), c in sorted(cambi.items(), key=lambda x: -x[1]):
-        print(f"  {c // 2:3d}  {v}\n       -> {n}")
+        print(f"  {c:3d}  {v}\n       -> {n}")
     if not cambi:
         print("  nessuna: già allineate.")
 
     if sconosciuti:
         print("\nETICHETTE FUORI TASSONOMIA (vanno mappate in tassonomia.py)")
         for s, c in sconosciuti.most_common():
-            print(f"  {c // 2:3d}  {s}")
+            print(f"  {c:3d}  {s}")
 
     # Copertura per obiettivo ufficiale
     conteggio = Counter(q["sotto_argomento"] for q in banche[0][1])

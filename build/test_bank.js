@@ -20,7 +20,7 @@ vm.runInContext(
   "\nglobalThis.__api = {grade, hotspotKeys, optionsOf, parseHotspot, norm, splitAns};", ctx);
 const { grade, hotspotKeys, optionsOf, parseHotspot, norm, splitAns } = ctx.__api;
 
-const TARGET = process.argv[2];
+const TARGET = process.argv[2] || path.join(BASE, "banca", "az104_question_bank_it.json");
 let all = JSON.parse(fs.readFileSync(TARGET,"utf8")).map(q=>{q._f=path.basename(TARGET);return q;});
 
 const fail = { unselectable: [], notCorrect: [], wrongPasses: [] };
