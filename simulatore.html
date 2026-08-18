@@ -335,33 +335,6 @@ td.num{font-family:var(--font-mono);text-align:right;font-variant-numeric:tabula
 </header>
 
 <!-- ============ SETUP ============ -->
-<section id="v-setup">
-  <div class="setup">
-    <h1>Carica la banca domande</h1>
-    <p class="lede">Trascina qui il file della banca per iniziare. Dopo il primo caricamento resta
-      salvata: alla prossima apertura riparti da dove eri.</p>
-    <div class="drop" id="drop">
-      <h3>Trascina il file, oppure scegli</h3>
-      <p><code class="mono">az104_question_bank.json</code> in inglese &nbsp;·&nbsp;
-         <code class="mono">az104_question_bank_it.json</code> in italiano</p>
-      <button class="btn primary" id="btn-pick">Scegli file</button>
-      <input type="file" id="file" accept=".json,.xlsx" class="hide">
-    </div>
-    <div class="note" id="setup-note">
-      <b>Riferimento:</b> study guide ufficiale — skills measured al 17 aprile 2026.
-      La simulazione usa 50 domande in 100 minuti con soglia 700/1000, rispettando i pesi ufficiali dei domini.
-      <br><br>
-      <b>Le due banche sono allineate id per id</b>, quindi note e progressi restano validi anche se
-      cambi lingua. Se pensi di sostenere l'esame in inglese, allenati sulla versione inglese: il lessico
-      dei distrattori fa parte della difficoltà della prova.
-      <br><br>
-      <b>Verifica incompleta:</b> solo 30 domande su 532 sono state ricontrollate contro Microsoft Learn
-      da un verificatore indipendente; le altre sono in stato « da rivedere ». Se una risposta ti sembra
-      sbagliata, apri il link alla documentazione prima di darla per buona — e correggila con
-      « Correggi la risposta corretta ».
-    </div>
-  </div>
-</section>
 
 <!-- ============ STUDIO ============ -->
 <section id="v-studio" class="hide">
@@ -610,92 +583,6 @@ function showWarn(){
   w.classList.remove("hide");
 }
 
-/* ============================================================ xlsx reader (no external lib)
-   Legge il .xlsx come ZIP: central directory + DecompressionStream('deflate-raw'). */
-async function readXlsx(buf){
-  const dv = new DataView(buf), u8 = new Uint8Array(buf);
-  // locate End Of Central Directory
-  let eocd = -1;
-  for(let i = u8.length - 22; i >= 0 && i > u8.length - 66000; i--){
-    if(dv.getUint32(i, true) === 0x06054b50){ eocd = i; break; }
-  }
-  if(eocd < 0) throw new Error("XLSX non valido (EOCD non trovato)");
-  const nEnt = dv.getUint16(eocd + 10, true);
-  let off = dv.getUint32(eocd + 16, true);
-  const files = {};
-  for(let i = 0; i < nEnt; i++){
-    if(dv.getUint32(off, true) !== 0x02014b50) break;
-    const method = dv.getUint16(off + 10, true);
-    const csize = dv.getUint32(off + 20, true);
-    const nameLen = dv.getUint16(off + 28, true);
-    const extraLen = dv.getUint16(off + 30, true);
-    const cmtLen = dv.getUint16(off + 32, true);
-    const lho = dv.getUint32(off + 42, true);
-    const name = new TextDecoder().decode(u8.subarray(off + 46, off + 46 + nameLen));
-    // local header -> data start
-    const lNameLen = dv.getUint16(lho + 26, true), lExtraLen = dv.getUint16(lho + 28, true);
-    const dataStart = lho + 30 + lNameLen + lExtraLen;
-    files[name] = { method, data:u8.subarray(dataStart, dataStart + csize) };
-    off += 46 + nameLen + extraLen + cmtLen;
-  }
-  async function inflate(f){
-    if(!f) return "";
-    if(f.method === 0) return new TextDecoder().decode(f.data);
-    if(typeof DecompressionStream === "undefined")
-      throw new Error("Il browser non supporta la decompressione: converti il file in JSON.");
-    const ds = new DecompressionStream("deflate-raw");
-    const stream = new Blob([f.data]).stream().pipeThrough(ds);
-    return new TextDecoder().decode(await new Response(stream).arrayBuffer());
-  }
-  const P = new DOMParser();
-  // shared strings
-  let shared = [];
-  if(files["xl/sharedStrings.xml"]){
-    const doc = P.parseFromString(await inflate(files["xl/sharedStrings.xml"]), "application/xml");
-    shared = [...doc.getElementsByTagName("si")].map(si =>
-      [...si.getElementsByTagName("t")].map(t => t.textContent).join(""));
-  }
-  // find the sheet named "Domande" via workbook + rels
-  let target = "xl/worksheets/sheet1.xml";
-  try{
-    const wb = P.parseFromString(await inflate(files["xl/workbook.xml"]), "application/xml");
-    const rel = P.parseFromString(await inflate(files["xl/_rels/workbook.xml.rels"]), "application/xml");
-    const relMap = {};
-    [...rel.getElementsByTagName("Relationship")].forEach(r =>
-      relMap[r.getAttribute("Id")] = r.getAttribute("Target"));
-    const sheets = [...wb.getElementsByTagName("sheet")];
-    const s = sheets.find(x => (x.getAttribute("name") || "").toLowerCase() === "domande") || sheets[0];
-    const rid = s.getAttribute("r:id") || s.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "id");
-    let t = relMap[rid] || "worksheets/sheet1.xml";
-    target = t.startsWith("/") ? t.slice(1) : "xl/" + t.replace(/^\.?\//, "");
-  }catch(e){ /* fall back to sheet1 */ }
-  const sh = P.parseFromString(await inflate(files[target]), "application/xml");
-
-  const colIdx = ref => { const m = ref.match(/^([A-Z]+)/); let n = 0;
-    for(const ch of m[1]) n = n * 26 + (ch.charCodeAt(0) - 64); return n - 1; };
-  const rows = [...sh.getElementsByTagName("row")].map(r => {
-    const out = [];
-    [...r.getElementsByTagName("c")].forEach(c => {
-      const i = colIdx(c.getAttribute("r") || "A1");
-      const t = c.getAttribute("t");
-      let v = "";
-      if(t === "inlineStr"){
-        v = [...c.getElementsByTagName("t")].map(x => x.textContent).join("");
-      }else{
-        const vn = c.getElementsByTagName("v")[0];
-        v = vn ? vn.textContent : "";
-        if(t === "s") v = shared[parseInt(v, 10)] || "";
-      }
-      out[i] = v;
-    });
-    return out;
-  });
-  if(!rows.length) throw new Error("Foglio 'Domande' vuoto");
-  const head = rows[0].map(h => String(h || "").trim());
-  return rows.slice(1)
-    .filter(r => r && r.some(c => String(c || "").trim()))
-    .map(r => { const o = {}; head.forEach((h, i) => { if(h) o[h] = r[i] == null ? "" : String(r[i]); }); return o; });
-}
 
 /* ============================================================ bank loading */
 function normalizeBank(arr){
@@ -717,37 +604,11 @@ function normalizeBank(arr){
   });
   return out;
 }
-async function loadFile(file){
-  try{
-    let rows;
-    if(/\.xlsx$/i.test(file.name)){
-      rows = await readXlsx(await file.arrayBuffer());
-    }else{
-      const txt = await file.text();
-      let data = JSON.parse(txt.replace(/^﻿/, ""));
-      if(!Array.isArray(data)){
-        data = data.domande || data.questions || data.items || data.data;
-      }
-      if(!Array.isArray(data)) throw new Error("Il JSON deve contenere un array di domande.");
-      rows = data;
-    }
-    const bank = normalizeBank(rows);
-    if(!bank.length) throw new Error("Nessuna domanda valida trovata nel file.");
-    BANK = bank;
-    const ok = await store.set(K_BANK, BANK);
-    if(!ok) showWarn();
-    toast(bank.length + " domande caricate");
-    buildFilters(); go("studio");
-  }catch(e){
-    alert("Caricamento non riuscito: " + e.message);
-  }
-}
 
 /* ============================================================ views */
 function go(view){
-  ["setup","studio","esame","stats"].forEach(v =>
+  ["studio","esame","stats"].forEach(v =>
     document.getElementById("v-" + v).classList.toggle("hide", v !== view));
-  document.getElementById("tabs").classList.toggle("hide", view === "setup");
   [...document.querySelectorAll(".tab")].forEach(t =>
     t.setAttribute("aria-selected", String(t.dataset.view === view)));
   document.getElementById("bankchip").textContent = BANK.length ? BANK.length + " domande" : "";
@@ -1830,14 +1691,6 @@ document.getElementById("tabs").onclick = e => {
   go(t.dataset.view);
 };
 
-const drop = document.getElementById("drop");
-document.getElementById("btn-pick").onclick = () => document.getElementById("file").click();
-document.getElementById("file").onchange = e => { if(e.target.files[0]) loadFile(e.target.files[0]); };
-["dragenter","dragover"].forEach(ev => drop.addEventListener(ev, e => {
-  e.preventDefault(); drop.classList.add("over"); }));
-["dragleave","drop"].forEach(ev => drop.addEventListener(ev, e => {
-  e.preventDefault(); drop.classList.remove("over"); }));
-drop.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if(f) loadFile(f); });
 
 /* filters */
 const bind = (id, key, ev) => {
