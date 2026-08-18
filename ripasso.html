@@ -268,7 +268,7 @@
     color: var(--ink-2);
   }
 
-  /* ---------- avviso verifica ---------- */
+  /* ---------- avviso memoria volatile ---------- */
 
   .notice {
     max-width: 720px;
@@ -282,16 +282,6 @@
   }
 
   .notice strong { color: var(--ink); }
-
-  .notice button {
-    background: none;
-    border: 0;
-    padding: 0;
-    margin-left: 4px;
-    color: var(--warn);
-    font-weight: 600;
-    text-decoration: underline;
-  }
 
   /* ---------- card ---------- */
 
@@ -682,13 +672,7 @@
   </div>
 </header>
 
-<div class="notice" id="notice" hidden>
-  <strong>502 domande su 532 non sono state ricontrollate.</strong>
-  Sono scritte sulla documentazione Microsoft Learn e ognuna cita la sua pagina, ma la chiave di
-  risposta non ha avuto una verifica indipendente. Se una risposta ti convince poco, apri il link
-  Learn in fondo alla card prima di darla per buona. Le 30 verificate hanno il bollino verde.
-  <button id="notice-x">Ho capito</button>
-</div>
+<div class="notice" id="notice" hidden></div>
 
 <main id="stage"></main>
 
@@ -1083,16 +1067,7 @@
     document.documentElement.dataset.theme = attuale === "dark" ? "light" : "dark";
   });
 
-  document.getElementById("notice-x").addEventListener("click", () => {
-    document.getElementById("notice").hidden = true;
-    try { localStorage.setItem(CHIAVE + "-avviso", "1"); } catch (err) { /* volatile */ }
-  });
-
   /* ---------- avvio ---------- */
-
-  let avvisoLetto = false;
-  try { avvisoLetto = localStorage.getItem(CHIAVE + "-avviso") === "1"; } catch (err) { /* volatile */ }
-  document.getElementById("notice").hidden = avvisoLetto;
 
   montaFiltri();
   ricalcola(false);
