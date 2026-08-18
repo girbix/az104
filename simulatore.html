@@ -464,6 +464,13 @@ const DOM_IT = {
   "Implement and manage virtual networking":"Rete virtuale",
   "Monitor and maintain Azure resources":"Monitoraggio e manutenzione"
 };
+/* Etichette italiane dei 82 obiettivi ufficiali, iniettate dalla build a
+   partire dai titoli delle lezioni: la categoria che il simulatore dice di
+   ripassare e' cosi' scritta come la lezione da riaprire. La chiave resta il
+   nome ufficiale inglese, che e' l'identificatore della study guide. */
+const SOTTO_IT = /*__SOTTO_IT__*/{"Create users and groups":"Utenti e gruppi","Manage user and group properties":"Proprietà di utenti e gruppi","Manage licenses in Microsoft Entra ID":"Licenze","Manage external users":"Utenti esterni (guest)","Configure self-service password reset (SSPR)":"Reimpostazione password self-service","Manage built-in Azure roles":"Ruoli predefiniti di Azure","Assign roles at different scopes":"Ambiti di assegnazione","Interpret access assignments":"Leggere le assegnazioni di accesso","Implement and manage Azure Policy":"Azure Policy","Configure resource locks":"Blocchi sulle risorse","Apply and manage tags on resources":"Tag","Manage resource groups":"Resource group","Manage subscriptions":"Subscription","Manage costs by using alerts, budgets, and Azure Advisor recommendations":"Costi, budget e Advisor","Configure management groups":"Management group","Configure Azure Storage firewalls and virtual networks":"Firewall dello storage","Create and use shared access signature (SAS) tokens":"Token SAS","Configure stored access policies":"Stored access policy","Manage access keys":"Chiavi di accesso","Configure identity-based access for Azure Files":"Accesso a identità per Azure Files","Create and configure storage accounts":"Storage account","Configure Azure Storage redundancy":"Ridondanza","Configure object replication":"Object replication","Configure storage account encryption":"Cifratura dello storage","Manage data by using Azure Storage Explorer and AzCopy":"Storage Explorer e AzCopy","Create and configure a file share in Azure Files":"File share","Create and configure a container in Azure Blob Storage":"Container di blob","Configure storage tiers":"Livelli di accesso","Configure soft delete for blobs and containers":"Soft delete","Configure snapshots and soft delete for Azure Files":"Snapshot e soft delete per Azure Files","Configure blob lifecycle management":"Lifecycle management","Configure blob versioning":"Versioning dei blob","Interpret an Azure Resource Manager template or a Bicep file":"Leggere un template ARM o Bicep","Modify an existing Azure Resource Manager template":"Modificare un template ARM","Modify an existing Bicep file":"Modificare un file Bicep","Deploy resources by using an Azure Resource Manager template or a Bicep file":"Distribuire un template","Export a deployment as an Azure Resource Manager template or convert an Azure Resource Manager template to a Bicep file":"Esportare e convertire","Create a virtual machine":"Creare una macchina virtuale","Configure encryption at host for Azure virtual machines":"Encryption at host","Move a virtual machine to another resource group, subscription, or region":"Spostare una macchina virtuale","Manage virtual machine sizes":"Dimensioni delle VM","Manage virtual machine disks":"Dischi","Deploy virtual machines to availability zones and availability sets":"Availability set e availability zone","Deploy and configure an Azure Virtual Machine Scale Sets":"Virtual Machine Scale Set","Create and manage an Azure Container Registry":"Azure Container Registry","Provision a container by using Azure Container Instances":"Azure Container Instances","Provision a container by using Azure Container Apps":"Azure Container Apps","Manage sizing and scaling for containers, including Azure Container Instances and Azure Container Apps":"Dimensionare e scalare i container","Provision an App Service plan":"App Service plan","Configure scaling for an App Service plan":"Scalare un App Service plan","Create an App Service":"Creare un'App Service","Configure certificates and Transport Layer Security (TLS) for an App Service":"Certificati e TLS","Map an existing custom DNS name to an App Service":"Dominio personalizzato","Configure backup for an App Service":"Backup di un'App Service","Configure networking settings for an App Service":"Rete di un'App Service","Configure deployment slots for an App Service":"Deployment slot","Create and configure virtual networks and subnets":"Virtual network e subnet","Create and configure virtual network peering":"Peering fra VNet","Configure public IP addresses":"Indirizzi IP pubblici","Configure user-defined routes":"User-defined route","Troubleshoot network connectivity":"Diagnosticare la connettività","Create and configure network security groups (NSGs) and application security groups":"NSG e ASG","Evaluate effective security rules in NSGs":"Regole di sicurezza effettive","Implement Azure Bastion":"Azure Bastion","Configure service endpoints for Azure platform as a service (PaaS)":"Service endpoint","Configure private endpoints for Azure PaaS":"Private endpoint","Configure Azure DNS":"Azure DNS","Configure an internal or public load balancer":"Load balancer","Troubleshoot load balancing":"Diagnosticare il bilanciamento","Interpret metrics in Azure Monitor":"Metriche","Configure log settings in Azure Monitor":"Impostazioni dei log","Query and analyze logs in Azure Monitor":"Query KQL","Set up alert rules, action groups, and alert processing rules in Azure Monitor":"Avvisi e action group","Configure and interpret monitoring of virtual machines, storage accounts, and networks by using Azure Monitor Insights":"Insights","Use Azure Network Watcher and Connection monitor":"Network Watcher e Connection monitor","Create a Recovery Services vault":"Recovery Services vault","Create an Azure Backup vault":"Backup vault","Create and configure a backup policy":"Backup policy","Perform backup and restore operations by using Azure Backup":"Backup e ripristino","Configure Azure Site Recovery for Azure resources":"Site Recovery","Perform a failover to a secondary region by using Site Recovery":"Failover e failback","Configure and interpret reports and alerts for backups":"Report e avvisi di backup"};
+const subIT = s => SOTTO_IT[s] || s;
+
 const WEIGHTS = {
   "Manage Azure identities and governance":22.5,
   "Implement and manage storage":17.5,
@@ -769,8 +776,9 @@ function buildFilters(){
 }
 function refreshSubs(){
   const pool = F.dom ? BANK.filter(q => q.dominio === F.dom) : BANK;
-  const subs = [...new Set(pool.map(q => q.sotto_argomento).filter(Boolean))].sort();
-  fill("f-sub", subs.map(s => [s, s]), "Tutti");
+  const subs = [...new Set(pool.map(q => q.sotto_argomento).filter(Boolean))]
+    .sort((x, y) => subIT(x).localeCompare(subIT(y)));
+  fill("f-sub", subs.map(s => [s, subIT(s)]), "Tutti");
   document.getElementById("f-sub").value = subs.includes(F.sub) ? F.sub : (F.sub = "");
 }
 function selection(){
@@ -876,7 +884,7 @@ function questionCard(q, opt){
   const body = el("div", "qbody");
   if(!exam){
     const dl = el("div", "domline");
-    dl.innerHTML = "<b>" + esc(DOM_IT[q.dominio] || q.dominio) + "</b> · " + esc(q.sotto_argomento);
+    dl.innerHTML = "<b>" + esc(DOM_IT[q.dominio] || q.dominio) + "</b> · " + esc(subIT(q.sotto_argomento));
     body.appendChild(dl);
   }
   let stem = q.domanda;
@@ -1548,7 +1556,7 @@ function renderExamResult(){
       const cls = p >= 50 ? "mid" : "no";
       const lbl = s.ko === s.n ? "tutte sbagliate" : p + "% corrette";
       const tr = el("tr");
-      tr.innerHTML = "<td>" + esc(k) + "<div style='font-size:11px;color:var(--text-3)'>" +
+      tr.innerHTML = "<td>" + esc(subIT(k)) + "<div style='font-size:11px;color:var(--text-3)'>" +
         esc(DOM_IT[s.dom] || s.dom) + "</div></td><td class='num'><b>" + s.ko + "</b></td>" +
         "<td class='num'>" + s.n + "</td><td><span class='pill " + cls + "'>" + esc(lbl) + "</span></td>";
       tb2.appendChild(tr);
@@ -1719,7 +1727,7 @@ function renderStats(){
     weak.forEach(([k, p, n]) => {
       const [d, s] = k.split(" :: ");
       const tr = el("tr");
-      tr.innerHTML = "<td>" + esc(s) + "<div style='font-size:11px;color:var(--text-3)'>" +
+      tr.innerHTML = "<td>" + esc(subIT(s)) + "<div style='font-size:11px;color:var(--text-3)'>" +
         esc(DOM_IT[d] || d) + "</div></td><td class='num'>" + n + "</td><td class='num'><span class='pill " +
         (p >= 70 ? "ok" : p >= 50 ? "mid" : "no") + "'>" + p + "%</span></td>";
       tb2.appendChild(tr);

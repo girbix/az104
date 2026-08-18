@@ -15,6 +15,25 @@ import re
 import sys
 from pathlib import Path
 
+def etichette_italiane(base):
+    """Obiettivo ufficiale -> titolo italiano, dalle lezioni di teoria/.
+
+    Nel ripasso il sotto-argomento e' solo un'etichetta da leggere e da cercare:
+    non serve la chiave inglese, quindi si traduce direttamente nel payload.
+    """
+    m = {}
+    for f in sorted((base.parent / "teoria").glob("*.json")):
+        for l in json.loads(f.read_text("utf-8")):
+            m[l["obiettivo"]] = l["titolo"]
+    if not m:
+        for f in sorted((Path(__file__).parent.parent / "teoria").glob("*.json")):
+            for l in json.loads(f.read_text("utf-8")):
+                m[l["obiettivo"]] = l["titolo"]
+    return m
+
+
+SOTTO_IT = {}
+
 DOMINI = {
     "Manage Azure identities and governance": 1,
     "Implement and manage storage": 2,
@@ -112,7 +131,7 @@ def compatta(q, problemi):
     out = {
         "id": q["id"],
         "d": DOMINI[q["dominio"]],
-        "s": q["sotto_argomento"],
+        "s": SOTTO_IT.get(q["sotto_argomento"], q["sotto_argomento"]),
         "t": tipo,
         "q": q["domanda"],
         "e": q["spiegazione"],
@@ -173,6 +192,9 @@ def main():
     base = Path(sys.argv[1])
     banca = json.loads((base / "az104_question_bank_it.json").read_text("utf-8"))
     template = (Path(__file__).parent / "ripasso_template.html").read_text("utf-8")
+
+    global SOTTO_IT
+    SOTTO_IT = etichette_italiane(base)
 
     problemi = []
     domande = [compatta(q, problemi) for q in banca]
