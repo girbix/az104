@@ -129,6 +129,9 @@ a{color:var(--accent-2)}
   box-shadow:0 1px 0 var(--accent) inset,0 -2px 0 var(--accent) inset}
 .frase.leggo .par{background:var(--accent);color:#fff;border-radius:2px;padding:0 1px}
 .senza-voci{font-size:11.5px;color:var(--signal);padding:0 4px}
+/* lezione aperta da un rimando esterno: si evidenzia per un attimo, se no
+   dopo lo scroll non si capisce quale delle 82 stavi cercando */
+.lez.puntata{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft),var(--shadow)}
 
 @media (max-width:900px){
   .wrap{grid-template-columns:1fr;gap:16px;padding:14px}
@@ -522,4 +525,20 @@ try {
 } catch(e){}
 
 disegna();
+
+/* Rimando da un'altra pagina: studia.html?o=<obiettivo ufficiale>.
+   Il simulatore lo usa per portare dalla categoria sbagliata alla lezione,
+   senza far cercare a mano fra 82 voci. Si aggancia all'obiettivo e non
+   all'indice, perche' l'indice cambia appena si filtra. */
+(function rimando(){
+  const o = new URLSearchParams(location.search).get("o");
+  if(!o) return;
+  const i = LEZIONI.findIndex(l => l.o === o);
+  if(i < 0) return;
+  const card = document.getElementById("lez-" + i);
+  if(!card) return;
+  card.scrollIntoView({ block:"start" });
+  card.classList.add("puntata");
+  setTimeout(() => card.classList.remove("puntata"), 2600);
+})();
 </script>

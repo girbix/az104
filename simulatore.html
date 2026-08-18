@@ -1405,7 +1405,7 @@ function renderExamResult(){
     const cap = el("p");
     cap.style.cssText = "font-size:12px;color:var(--text-3);margin:-3px 0 10px;line-height:1.5";
     cap.textContent = "I sotto-argomenti in cui hai sbagliato in questa prova, dai più critici in giù. " +
-      "Nel Ripasso trovi lo stesso filtro « Sotto-argomento ».";
+      "Ogni voce porta alla sua lezione nella teoria.";
     rp.appendChild(cap);
     const tw2 = el("div", "tblwrap");
     const t2 = el("table");
@@ -1417,7 +1417,11 @@ function renderExamResult(){
       const cls = p >= 50 ? "mid" : "no";
       const lbl = s.ko === s.n ? "tutte sbagliate" : p + "% corrette";
       const tr = el("tr");
-      tr.innerHTML = "<td>" + esc(subIT(k)) + "<div style='font-size:11px;color:var(--text-3)'>" +
+      /* La categoria porta alla sua lezione: e' il senso di avere teoria e
+         simulatore agganciati agli stessi obiettivi. */
+      const href = "studia.html?o=" + encodeURIComponent(k);
+      tr.innerHTML = "<td><a href='" + esc(href) + "'>" + esc(subIT(k)) +
+        "</a><div style='font-size:11px;color:var(--text-3)'>" +
         esc(DOM_IT[s.dom] || s.dom) + "</div></td><td class='num'><b>" + s.ko + "</b></td>" +
         "<td class='num'>" + s.n + "</td><td><span class='pill " + cls + "'>" + esc(lbl) + "</span></td>";
       tb2.appendChild(tr);
@@ -1588,7 +1592,8 @@ function renderStats(){
     weak.forEach(([k, p, n]) => {
       const [d, s] = k.split(" :: ");
       const tr = el("tr");
-      tr.innerHTML = "<td>" + esc(subIT(s)) + "<div style='font-size:11px;color:var(--text-3)'>" +
+      tr.innerHTML = "<td><a href='studia.html?o=" + esc(encodeURIComponent(s)) + "'>" +
+        esc(subIT(s)) + "</a><div style='font-size:11px;color:var(--text-3)'>" +
         esc(DOM_IT[d] || d) + "</div></td><td class='num'>" + n + "</td><td class='num'><span class='pill " +
         (p >= 70 ? "ok" : p >= 50 ? "mid" : "no") + "'>" + p + "%</span></td>";
       tb2.appendChild(tr);

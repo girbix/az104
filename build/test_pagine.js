@@ -62,6 +62,39 @@ for (const nome of PAGINE) {
   else if (payload) ko("il payload contiene </script>");
 }
 
+
+/* Il giro fra le pagine: ogni categoria che il simulatore puo' mostrare a fine
+   prova deve avere una lezione raggiungibile con studia.html?o=<obiettivo>.
+   Se un obiettivo resta senza lezione il collegamento porta a una pagina che
+   non scorre da nessuna parte, e non se ne accorge nessuno finche' non ci
+   clicca sopra. */
+console.log("\ncollegamento simulatore -> teoria");
+{
+  const sim = fs.readFileSync(path.join(base, "simulatore.html"), "utf8");
+  const stu = fs.readFileSync(path.join(base, "studia.html"), "utf8");
+  const rigaBanca = sim.split("\n").find((r) => r.startsWith("const BANCA_INCLUSA"));
+  const rigaLez = stu.split("\n").find((r) => r.startsWith("const LEZIONI"));
+  if (!rigaBanca || !rigaLez) {
+    ko("payload non trovato in una delle due pagine");
+  } else {
+    const leggi = (riga, chiave) =>
+      new Set([...riga.matchAll(new RegExp('"' + chiave + '":"((?:[^"\\\\]|\\\\.)*)"', "g"))]
+        .map((m) => JSON.parse('"' + m[1] + '"')));
+    const obiettivi = leggi(rigaBanca, "sotto_argomento");
+    const lezioni = leggi(rigaLez, "o");
+    const senza = [...obiettivi].filter((o) => !lezioni.has(o));
+    senza.length === 0
+      ? ok(`${obiettivi.size} categorie, tutte con la loro lezione`)
+      : ko(`categorie senza lezione: ${senza.slice(0, 3).join(" | ")}`);
+    sim.includes('"studia.html?o="')
+      ? ok("le categorie da ripassare linkano alla teoria")
+      : ko("le categorie da ripassare non linkano piu' alla teoria");
+    stu.includes('URLSearchParams(location.search).get("o")')
+      ? ok("la teoria sa ricevere il rimando")
+      : ko("la teoria non gestisce piu' il parametro ?o=");
+  }
+}
+
 console.log(errori === 0 ? "\nTutto verde: le pagine sono integre."
                          : `\n${errori} problemi.`);
 process.exit(errori ? 1 : 0);
