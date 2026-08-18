@@ -16,8 +16,8 @@
 const fs = require("fs"), path = require("path"), vm = require("vm");
 
 const base = process.argv[2] || path.resolve(__dirname, "..");
-const PAGINE = ["index.html", "studia.html", "ripasso.html", "simulatore.html"];
-const NOMI = { "index.html": "Home", "studia.html": "Teoria",
+const PAGINE = ["index.html", "studia.html", "pratica.html", "ripasso.html", "simulatore.html"];
+const NOMI = { "index.html": "Home", "studia.html": "Teoria", "pratica.html": "Pratica",
                "ripasso.html": "Ripasso", "simulatore.html": "Simulatore" };
 
 let errori = 0;

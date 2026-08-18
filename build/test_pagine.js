@@ -11,7 +11,7 @@
 const fs = require("fs"), path = require("path"), vm = require("vm");
 
 const base = process.argv[2] || path.resolve(__dirname, "..");
-const PAGINE = ["index.html", "studia.html", "ripasso.html", "simulatore.html"];
+const PAGINE = ["index.html", "studia.html", "pratica.html", "ripasso.html", "simulatore.html"];
 
 let errori = 0;
 const ko = (m) => { console.log(`  FAIL  ${m}`); errori++; };
@@ -137,6 +137,7 @@ console.log("\nnumeri dichiarati sulla homepage");
   const idx = fs.readFileSync(path.join(base, "index.html"), "utf8");
   const stu = fs.readFileSync(path.join(base, "studia.html"), "utf8");
   const sim = fs.readFileSync(path.join(base, "simulatore.html"), "utf8");
+  const pra = fs.readFileSync(path.join(base, "pratica.html"), "utf8");
 
   const conta = (testo, inizio, pezzo) => {
     const riga = testo.split("\n").find((r) => r.startsWith(inizio));
@@ -144,10 +145,12 @@ console.log("\nnumeri dichiarati sulla homepage");
   };
   const lezioni = conta(stu, "const LEZIONI", '{"o":"');
   const domande = conta(sim, "const BANCA_INCLUSA", '"id":"AZ104-');
+  const lab = conta(pra, "const LAB", '"id":"P');
 
   const reale = {
     lezioni,
     domande,
+    lab,
     n: Number((sim.match(/EXAM_N\s*=\s*(\d+)/) || [])[1]),
     min: Number((sim.match(/EXAM_MIN\s*=\s*(\d+)/) || [])[1]),
   };
@@ -155,6 +158,7 @@ console.log("\nnumeri dichiarati sulla homepage");
   const atteso = [
     [reale.lezioni, "lezioni"],
     [reale.domande, "domande"],
+    [reale.lab, "lab"],
     [reale.n, "domande estratte dal simulatore"],
     [reale.min, "minuti d'esame"],
   ];
