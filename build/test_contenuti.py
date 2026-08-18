@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Controlla i contenuti: banca domande e CSV per Anki.
+"""Controlla i contenuti della banca domande.
 
     python test_contenuti.py ["<cartella repo>"]
 
 I test in JavaScript coprono la *valutazione* (la risposta giusta viene contata
 giusta). Questo copre i *dati*: chiavi che puntano a opzioni inesistenti, hotspot
 con menu irrisolvibili, sì/No spaiati, campi mancanti,
-CSV che Anki spezzerebbe sul separatore.
 
 Esce con codice 1 se trova qualcosa.
 """
@@ -273,43 +272,11 @@ def duplicati(banca):
         visti[f] = q["id"]
 
 
-def csv_anki(cartella):
-    for f in sorted(cartella.glob("*.csv")):
-        righe = f.read_text(encoding="utf-8").splitlines()
-        direttive = [r for r in righe if r.startswith("#")]
-        corpo = [r for r in righe if not r.startswith("#") and r.strip()]
-        nome = f.name
-        attesi = 4 if any(r.startswith("#deck column") for r in direttive) else 3
-
-        if not righe or not righe[0].startswith("#separator:Semicolon"):
-            P("CSV: manca #separator:Semicolon in testa", nome)
-        if not any(r.startswith("#html:true") for r in direttive):
-            P("CSV: manca #html:true", nome)
-        if not any(r.startswith("#deck") for r in direttive):
-            P("CSV: manca la direttiva #deck", nome)
-
-        fronti = []
-        for i, r in enumerate(csv.reader(io.StringIO("\n".join(corpo)),
-                                         delimiter=";", quotechar='"'), 1):
-            if len(r) != attesi:
-                P("CSV: record con il numero sbagliato di campi", nome,
-                  f"riga {i}: {len(r)} invece di {attesi}")
-                continue
-            for k, etichetta in enumerate(["fronte", "retro", "tag", "mazzo"][:attesi]):
-                if not r[k].strip():
-                    P(f"CSV: {etichetta} vuoto", nome, f"riga {i}")
-            fronti.append(r[0].strip().lower())
-        for t, n in Counter(fronti).items():
-            if n > 1:
-                P("CSV: fronte duplicato", nome, t[:70])
-
-
 def main():
     IT = json.loads((BASE / "banca" / "az104_question_bank_it.json").read_text("utf-8"))
 
     audit(IT, "banca")
     duplicati(IT)
-    csv_anki(BASE / "flashcards")
 
     print(f"Banca {len(IT)} domande" + chr(10))
     dom = Counter(q["dominio"] for q in IT)
@@ -329,7 +296,7 @@ def main():
     tot = sum(len(v) for v in problemi.values())
     print()
     if not tot:
-        print("Tutto verde: banca e CSV senza problemi.")
+        print("Tutto verde: banca senza problemi.")
         return 0
     print(f"{tot} problemi:\n")
     for cat in sorted(problemi, key=lambda c: -len(problemi[c])):
