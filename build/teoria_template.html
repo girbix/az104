@@ -139,6 +139,25 @@ a{color:var(--accent-2)}
   .cerca{width:150px}
   .brand{font-size:13px}
 }
+/* ---------- tabella dei progressi ---------- */
+.prog{width:100%;border-collapse:collapse;margin-top:15px;font-size:13.5px}
+.prog caption{text-align:left;font-family:var(--font-dis);font-weight:600;font-size:14px;
+  color:var(--text);padding-bottom:7px}
+.prog th,.prog td{padding:6px 8px;text-align:right;border-bottom:1px solid var(--line-2)}
+.prog thead th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--text-3);font-weight:600}
+.prog th[scope=row]{text-align:left;font-weight:500;color:var(--text-2);white-space:nowrap}
+.prog tfoot th[scope=row],.prog tfoot td{font-weight:700;color:var(--text);
+  border-bottom:0;border-top:1px solid var(--line)}
+.prog td.p{white-space:nowrap}
+.prog .barra{display:inline-block;vertical-align:middle;width:58px;height:6px;margin-right:8px;
+  background:var(--line-2);border-radius:3px;overflow:hidden}
+.prog .barra i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.prog tfoot .barra i{background:var(--good)}
+.intro .prog-f{margin-top:9px;font-size:12.5px;color:var(--text-3)}
+.link{background:none;border:0;padding:0;font:inherit;color:var(--accent);cursor:pointer;
+  text-decoration:underline}
+@media (max-width:560px){.prog .barra{display:none}}
 </style>
 
 <header class="top">
@@ -315,6 +334,7 @@ function parla(){
       pulisci();
       aggiornaAudio();
       disegnaRail();
+      disegnaProgresso();
     }
     return;
   }
@@ -428,6 +448,58 @@ function disegnaRail(){
   });
 }
 
+/* A che punto sei, dominio per dominio.
+   Prima era una frase con due numeri dentro ("30 di 82 segnate come studiate"):
+   andava riletta ogni volta per capire quanto mancava, e dell'ascolto non
+   diceva niente. Si aggiorna sul posto, senza ridisegnare la pagina, perche'
+   un redraw mentre una lezione viene letta la interromperebbe. */
+function disegnaProgresso(){
+  const box = document.getElementById("prog");
+  if(!box) return;
+
+  const conta = lez => ({
+    n: lez.length,
+    studiate: lez.filter(l => fatte[l.o]).length,
+    ascoltate: lez.filter(l => ascolti[l.o]).length,
+    volte: lez.reduce((s, l) => s + (ascolti[l.o] || 0), 0)
+  });
+  const righe = [1, 2, 3, 4, 5].map(d => ({
+    nome: DOM_IT[d], ...conta(LEZIONI.filter(l => l.d === d))
+  }));
+  const tot = conta(LEZIONI);
+
+  const perc = r => r.n ? Math.round(r.ascoltate / r.n * 100) : 0;
+  const barra = r => '<td class="p"><span class="barra"><i style="width:' + perc(r) +
+    '%"></i></span><b>' + perc(r) + "%</b></td>";
+  const riga = (r, tag) => "<tr><" + tag + ' scope="row">' + esc(r.nome) + "</" + tag + ">" +
+    "<td>" + r.n + "</td><td>" + r.studiate + "</td><td>" + r.ascoltate + "</td>" +
+    barra(r) + "</tr>";
+
+  box.innerHTML =
+    '<table class="prog"><caption>A che punto sei</caption>' +
+    "<thead><tr><th>Dominio</th><th>Lezioni</th><th>Studiate</th><th>Ascoltate</th>" +
+    "<th>% ascoltate</th></tr></thead>" +
+    "<tbody>" + righe.map(r => riga(r, "th")).join("") + "</tbody>" +
+    "<tfoot>" + riga({ nome: "Totale", ...tot }, "th") + "</tfoot></table>" +
+    '<p class="prog-f">' +
+    (tot.volte ? "In tutto " + tot.volte + (tot.volte === 1 ? " ascolto." : " ascolti.")
+               : "Nessuna lezione ascoltata, per ora.") +
+    ' <button class="link" type="button" id="azzera-teoria">Azzera studiate e ascolti</button></p>';
+
+  document.getElementById("azzera-teoria").onclick = () => {
+    const messaggio = "Azzerare i progressi della teoria?" +
+      String.fromCharCode(10, 10) +
+      "Si perdono le lezioni segnate come studiate e il conto degli ascolti. " +
+      "Le domande non vengono toccate: per quelle c'e' Ricomincia nella barra in alto.";
+    if(!confirm(messaggio)) return;
+    fatte = {};
+    ascolti = {};
+    salva();
+    salvaA();
+    disegna();
+  };
+}
+
 function disegna(){
   const lista = visibili();
   const main = document.getElementById("main");
@@ -435,16 +507,13 @@ function disegna(){
   disegnaRail();
 
   /* lezioni */
-  const n = Object.keys(fatte).length;
   let out = '<div class="intro"><h1>La teoria, in italiano</h1>' +
     "<p>Una lezione per ognuno degli <strong>82 obiettivi</strong> della study guide ufficiale: " +
     "il concetto in due righe, un esempio concreto, e la trappola che l'esame ci costruisce sopra. " +
     "Sono gli stessi obiettivi con cui il simulatore ti dice cosa ripassare, quindi da lì arrivi " +
-    "dritto alla lezione giusta. <strong>" + n + " di " + LEZIONI.length +
-    "</strong> segnate come studiate.</p>" +
-    "<p style='margin-top:9px'>Ogni lezione si può <strong>ascoltare</strong>: la frase in " +
-    "lettura resta evidenziata, e il pulsante mette in pausa. La voce si sceglie in alto a " +
-    "destra — sono elencate solo quelle naturali, se il tuo sistema ne ha.</p></div>";
+    "dritto alla lezione giusta. Ognuna si può <strong>ascoltare</strong>: la frase in lettura " +
+    "resta evidenziata, e il pulsante mette in pausa.</p>" +
+    '<div id="prog"></div></div>';
 
   if(!lista.length){
     out += '<div class="lez"><p class="vuoto">Nessuna lezione contiene «' + esc(filtro) + '».</p></div>';
@@ -471,6 +540,7 @@ function disegna(){
       "</div></article>";
   });
   main.innerHTML = out;
+  disegnaProgresso();
 
   /* le frasi vanno avvolte dopo l'inserimento nel DOM, non prima */
   main.querySelectorAll(".lez-b").forEach(preparaFrasi);
@@ -485,6 +555,7 @@ function disegna(){
       b.classList.toggle("on", !!fatte[o]);
       b.textContent = fatte[o] ? "✓ Studiata" : "Segna studiata";
       disegnaRail();
+      disegnaProgresso();
     };
   });
 
