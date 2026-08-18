@@ -272,11 +272,68 @@ def duplicati(banca):
         visti[f] = q["id"]
 
 
+def readme(IT):
+    """I numeri scritti nel README.
+
+    Sono a mano dentro la prosa e nessuno li ricalcola: la pagina di ripasso ha
+    annunciato "532 domande" per settimane mentre ne conteneva 591, e a
+    rileggerla non se n'era accorto nessuno. Qui si confrontano con la banca.
+    """
+    f = BASE / "README.md"
+    if not f.exists():
+        P("numeri del README", "README.md", "non esiste")
+        return
+
+    testo = f.read_text("utf-8")
+    piatto = re.sub(r"\s+", " ", testo)  # il README va a capo a meta' frase
+
+    tot = len(IT)
+    ver = sum(1 for q in IT if q["stato"] == "verificata")
+    dom = Counter(q["dominio"] for q in IT)
+    tipi = Counter(q["tipo"] for q in IT)
+    diff = Counter(q["difficolta"] for q in IT)
+
+    def pretende(frase, cosa):
+        if frase not in piatto:
+            P("numeri del README", cosa, f"non dice piu' «{frase}»")
+
+    pretende(f"{tot} domande", "totale")
+    pretende(f"{ver} domande su {tot} hanno una verifica indipendente", "verificate")
+    pretende(f"{tot - ver} risposte su {tot} non hanno una verifica indipendente", "da rivedere")
+    pretende(f"{len(set(q['sotto_argomento'] for q in IT))} obiettivi", "obiettivi")
+
+    # Tabella copertura: riconosco la riga dal nome ufficiale, che e' la chiave
+    # vera. L'etichetta italiana accanto puo' cambiare senza rompere niente.
+    for d in DOMINI:
+        riga = re.search(re.escape(d) + r"</sub>\s*\|\s*(\d+)\s*\|\s*([\d,]+)%\s*\|\s*([\d–-]+)%", testo)
+        if not riga:
+            P("numeri del README", d, "riga della tabella copertura non trovata")
+            continue
+        n, perc, peso = int(riga.group(1)), riga.group(2).replace(",", "."), riga.group(3)
+        if n != dom[d]:
+            P("numeri del README", d, f"dice {n} domande, ne ha {dom[d]}")
+        atteso = f"{dom[d] / tot * 100:.1f}"
+        if perc != atteso:
+            P("numeri del README", d, f"dice {perc}%, e' {atteso}%")
+        lo, hi = PESI_UFFICIALI[d]
+        if peso != f"{lo}–{hi}":
+            P("numeri del README", d, f"peso ufficiale {peso}% invece di {lo}–{hi}%")
+
+    for chiave, nome in (("multiple_choice", "scelta singola"), ("hotspot", "hotspot"),
+                         ("multiple_response", "scelta multipla"), ("yes_no_series", "serie Sì/No"),
+                         ("drag_drop", "drag-and-drop"), ("case_study", "case study")):
+        pretende(f"{tipi[chiave]} {nome}", f"tipo {nome}")
+
+    for chiave, nome in ((1, "base"), (2, "applicativa"), (3, "scenario")):
+        pretende(f"{diff[chiave]} {nome}", f"difficoltà {nome}")
+
+
 def main():
     IT = json.loads((BASE / "banca" / "az104_question_bank_it.json").read_text("utf-8"))
 
     audit(IT, "banca")
     duplicati(IT)
+    readme(IT)
 
     print(f"Banca {len(IT)} domande" + chr(10))
     dom = Counter(q["dominio"] for q in IT)
