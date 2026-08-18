@@ -112,7 +112,6 @@ simulatore.html     l'esame a tempo
 banca/              il JSON delle domande
 teoria/             i JSON delle lezioni, uno per dominio
 build/              gli script per rigenerare tutto, e i test
-prompt/             il prompt che ha generato la banca
 ```
 
 ### Rigenerare

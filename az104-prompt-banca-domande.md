@@ -9,7 +9,7 @@ Sei un esperto di certificazioni Microsoft Azure e di progettazione di materiale
 ## Parametri (modificabili)
 
 - **TARGET_DOMANDE**: minimo 500, di più se possibile
-- **LINGUA_DOMANDE**: inglese (come l'esame reale)
+- **LINGUA_DOMANDE**: italiano, con nomi di servizi, etichette del portale e comandi in inglese come all'esame
 - **LINGUA_UI**: italiano
 - **SIMULAZIONE**: 50 domande, 100 minuti, soglia 700/1000 (verifica in Fase 0 il formato corrente)
 - **RIPRESA**: se allego un file Excel/JSON di una sessione precedente, non ripartire da zero — caricalo, riprendi la numerazione, aggiungi solo domande nuove (append + dedup)
