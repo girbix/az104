@@ -4,10 +4,9 @@
 
     python build_pagine.py ["<cartella repo>"]
 
-Perche' esiste: build_telefono.py trasforma il simulatore-artifact nella
-versione offline, ma nel repo simulatore.html E' gia' la versione offline, con
-la banca dentro. Quella build non e' quindi rieseguibile, e senza questo script
-l'unico modo per aggiornare le domande nella pagina sarebbe modificarla a mano.
+Perche' esiste: simulatore.html non si costruisce da un modello, e' una pagina
+scritta a mano con la banca dentro. Senza questo script l'unico modo per
+aggiornare le domande sarebbe riscrivere a mano un payload da 1,6 MB.
 
 Qui il payload viene semplicemente sostituito sul posto, lasciando intatto tutto
 il resto della pagina. Il ripasso viene ricostruito dal suo template.

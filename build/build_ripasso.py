@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Costruisce az104_ripasso.html: la banca domande in una pagina sola per telefono.
+"""Costruisce az104_ripasso.html: la banca domande in una pagina sola.
 
     python build_ripasso.py "<cartella AZ-104>"
 
