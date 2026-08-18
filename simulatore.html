@@ -1761,6 +1761,18 @@ document.addEventListener("keydown", e => {
   if(!storageOK) showWarn();
   BANK = normalizeBank(BANCA_INCLUSA);
   buildFilters();
+  /* Arrivo da una lezione: simulatore.html?sub=<obiettivo ufficiale>.
+     Chi ha appena letto la lezione vuole le sue domande, non tutte e 591.
+     Imposto anche il dominio, altrimenti l'elenco dei sotto-argomenti resta
+     lungo 82 voci e non si vede quale e' selezionata. */
+  const sub = new URLSearchParams(location.search).get("sub");
+  const prima = sub && BANK.find(q => q.sotto_argomento === sub);
+  if(prima){
+    F.dom = prima.dominio;
+    F.sub = sub;
+    document.getElementById("f-dom").value = F.dom;
+    refreshSubs();
+  }
   go("studio");
 })();
 

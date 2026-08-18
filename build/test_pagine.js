@@ -95,6 +95,38 @@ console.log("\ncollegamento simulatore -> teoria");
   }
 }
 
+/* E il giro di ritorno: dalla lezione alle sue domande.
+   Ogni lezione ha un link a simulatore.html?sub=<obiettivo>. Se quel
+   sotto-argomento non ha domande in banca, il link apre uno Studio vuoto: non
+   e' un errore, e' peggio — sembra che le domande non ci siano. */
+console.log("\ncollegamento teoria -> simulatore");
+{
+  const sim = fs.readFileSync(path.join(base, "simulatore.html"), "utf8");
+  const stu = fs.readFileSync(path.join(base, "studia.html"), "utf8");
+  const rigaBanca = sim.split("\n").find((r) => r.startsWith("const BANCA_INCLUSA"));
+  const rigaLez = stu.split("\n").find((r) => r.startsWith("const LEZIONI"));
+  if (!rigaBanca || !rigaLez) {
+    ko("payload non trovato in una delle due pagine");
+  } else {
+    const leggi = (riga, chiave) =>
+      new Set([...riga.matchAll(new RegExp('"' + chiave + '":"((?:[^"\\\\]|\\\\.)*)"', "g"))]
+        .map((m) => JSON.parse('"' + m[1] + '"')));
+    const conDomande = leggi(rigaBanca, "sotto_argomento");
+    const lezioni = leggi(rigaLez, "o");
+    const vuote = [...lezioni].filter((o) => !conDomande.has(o));
+    vuote.length === 0
+      ? ok(`${lezioni.size} lezioni, tutte con domande da fare`)
+      : ko(`lezioni che linkano a uno Studio vuoto: ${vuote.slice(0, 3).join(" | ")}`);
+
+    stu.includes("simulatore.html?sub=")
+      ? ok("ogni lezione porta alle sue domande")
+      : ko("le lezioni non linkano piu' alle domande");
+    sim.includes('URLSearchParams(location.search).get("sub")')
+      ? ok("il simulatore sa ricevere il rimando")
+      : ko("il simulatore non gestisce piu' il parametro ?sub=");
+  }
+}
+
 /* I numeri scritti sulla homepage. Sono a mano dentro l'HTML, e nessuno li
    ricalcola: quando la banca cresce restano indietro in silenzio. E' gia'
    successo — il ripasso ha annunciato "532 domande" per settimane mentre ne

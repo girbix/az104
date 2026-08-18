@@ -671,6 +671,7 @@ function disegna(){
           '<button class="btn stop" type="button" style="display:none" aria-label="Interrompi">■</button>' +
           '<span class="volte"></span>' +
         "</span>" +
+        '<a href="simulatore.html?sub=' + encodeURIComponent(l.o) + '">→ Allenati su questo obiettivo</a>' +
         '<a href="' + esc(l.u) + '" target="_blank" rel="noopener noreferrer">↗ Approfondisci su Microsoft Learn</a>' +
         '<button class="btn segna' + (fatte[l.o] ? " on" : "") + '" data-o="' + esc(l.o) + '" data-i="' + i + '">' +
           (fatte[l.o] ? "✓ Studiata" : "Segna studiata") + "</button>" +
