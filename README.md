@@ -11,6 +11,7 @@ Niente da installare, niente account, niente server: i progressi restano nel tuo
 | | | |
 | --- | --- | --- |
 | **[Studia](https://girbix.github.io/az104/studia.html)** | 82 lezioni | il concetto, un esempio, la trappola d'esame — una per obiettivo ufficiale |
+| **[Pratica](https://girbix.github.io/az104/pratica.html)** | 33 lab | i comandi pronti, come verificare, e come smontare tutto. Ogni lab dice quanto costa prima che tu lo lanci |
 | **[Ripasso](https://girbix.github.io/az104/ripasso.html)** | 591 domande | risposta a scomparsa, spiegazione, filtri e ricerca. Serve a capire, non a misurare |
 | **[Simulatore](https://girbix.github.io/az104/simulatore.html)** | 50 in 100 min | estrazione pesata per dominio, soglia 700/1000, nessun feedback fino alla consegna |
 
@@ -20,13 +21,14 @@ Niente da installare, niente account, niente server: i progressi restano nel tuo
 
 ---
 
-## Le tre parti si parlano
+## Le quattro parti si parlano
 
 `sotto_argomento` non è testo libero: è uno degli **82 obiettivi ufficiali** della study guide, ed
-è lo stesso identico nelle tre pagine. È quello che tiene insieme il giro:
+è lo stesso identico in tutte e quattro le pagine. È quello che tiene insieme il giro:
 
 **sbagli** una domanda nel simulatore → la categoria compare fra le **categorie da ripassare** a
-fine prova, ordinate dalla più critica → **ci clicchi sopra** e si apre la lezione che la spiega.
+fine prova → **ci clicchi sopra** e si apre la lezione → *Provalo con le mani* apre il suo lab →
+*Allenati su questo obiettivo* rimette il simulatore su quelle domande.
 
 Un test controlla che nessuna categoria resti senza lezione, altrimenti il link porterebbe a una
 pagina che non scorre da nessuna parte e non se ne accorgerebbe nessuno.
@@ -44,7 +46,7 @@ pagina che non scorre da nessuna parte e non se ne accorgerebbe nessuno.
 | **Monitoraggio e manutenzione**<br><sub>Monitor and maintain Azure resources</sub> | 86 | 14,6% | 10–15% ✓ |
 
 Tutti e **82 gli obiettivi** hanno almeno 4 domande: nessuno scoperto. La teoria li copre uno per
-uno, con la stessa granularità.
+uno, e i 33 lab li coprono tutti e 82 con le mani — 17,8 ore di pratica in tutto.
 
 **Tipi:** 290 scelta singola · 99 hotspot · 94 scelta multipla · 71 serie Sì/No · 22 drag-and-drop
 · 15 case study
@@ -87,10 +89,12 @@ richieste esterne. Scaricare una pagina e aprirla da `file://` funziona uguale.
 ```text
 index.html          la home
 studia.html         la teoria, 82 lezioni
+pratica.html        i lab guidati, 33
 ripasso.html        le domande, con filtri e ricerca
 simulatore.html     l'esame a tempo
 banca/              il JSON delle domande
 teoria/             i JSON delle lezioni, uno per dominio
+pratica/            i JSON dei lab, uno per dominio
 build/              gli script per rigenerare tutto, e i test
 ```
 
@@ -104,6 +108,7 @@ cd build
 python aggiungi_domande.py --scrivi   # id in coda, mai riusati
 python build_pagine.py                # reinietta la banca in simulatore.html e ripasso.html
 python build_teoria.py                # ricostruisce studia.html da teoria/
+python build_pratica.py               # ricostruisce pratica.html da pratica/
 ```
 
 `sotto_argomento` deve essere uno degli 82 obiettivi in
@@ -123,6 +128,7 @@ qualcosa — così si incatenano in un hook o in una action.
 cd build
 python test_contenuti.py   # dati: chiavi, hotspot, campi, copertura, i numeri di questo README
 python test_teoria.py      # 82 lezioni per 82 obiettivi, link in italiano
+python test_pratica.py     # 82 obiettivi coperti dai lab, e la pulizia cancella davvero
 node test_esame.js         # simulazione: durata, n. domande, soglia, pesi
 node test_widget.js        # ogni domanda si disegna, valutata e non
 node test_ascolto.js       # voci offerte per l'ascolto e taglio in frasi
