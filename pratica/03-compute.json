@@ -1,0 +1,172 @@
+[
+  {
+    "id": "P14",
+    "d": 3,
+    "t": "Bicep e ARM: leggere, modificare, distribuire, esportare",
+    "min": 40,
+    "costo": "centesimi",
+    "obiettivi": ["Interpret an Azure Resource Manager template or a Bicep file", "Modify an existing Azure Resource Manager template", "Modify an existing Bicep file", "Deploy resources by using an Azure Resource Manager template or a Bicep file", "Export a deployment as an Azure Resource Manager template or convert an Azure Resource Manager template to a Bicep file"],
+    "perche": "Cinque obiettivi in un lab solo, e l'esame ti mette davanti un pezzo di template chiedendo cosa fa. Le due cose che contano: la differenza fra `parameters` e `variables`, e cosa succede in modalità **Complete** — cancella dal resource group tutto ciò che non è nel template. È la domanda che fa più danni.",
+    "serve": "Una sottoscrizione. La Cloud Shell ha già `az bicep`.",
+    "passi": [
+      "Scrivi un file Bicep minimo con un parametro, un default e un output.",
+      "Lancia `what-if` **prima** di distribuire: ti dice cosa cambierebbe senza cambiarlo. È lo strumento che l'esame associa a «verificare senza rischiare».",
+      "Distribuisci, poi rilancia lo stesso comando: la seconda volta non cambia niente. Le distribuzioni sono idempotenti.",
+      "Esporta il resource group come template ARM e guarda quanto è più verboso del Bicep.",
+      "Converti l'ARM esportato in Bicep con `decompile`: è la direzione che l'esame chiama «convert».",
+      "**Leggi ma non lanciare** il comando in modalità Complete: in questo resource group cancellerebbe tutto quello che non è nel template. Sapere che esiste basta."
+    ],
+    "cli": "RG=rg-lab-arm\naz group create -n $RG -l westeurope\n\ncat > main.bicep <<'FINE'\nparam nome string\nparam posizione string = resourceGroup().location\n\nvar tagComuni = {\n  ambiente: 'lab'\n}\n\nresource sa 'Microsoft.Storage/storageAccounts@2023-01-01' = {\n  name: nome\n  location: posizione\n  tags: tagComuni\n  sku: { name: 'Standard_LRS' }\n  kind: 'StorageV2'\n}\n\noutput indirizzoBlob string = sa.properties.primaryEndpoints.blob\nFINE\n\nNOME=stbicep$RANDOM\n\n# prima guarda cosa farebbe\naz deployment group what-if -g $RG --template-file main.bicep --parameters nome=$NOME\n\n# poi fallo\naz deployment group create -g $RG --template-file main.bicep --parameters nome=$NOME\n\n# esporta in ARM e riconverti in Bicep\naz group export --name $RG > esportato.json\naz bicep decompile --file esportato.json\n\n# NON lanciarlo: cancellerebbe tutto cio' che non e' nel template\n# az deployment group create -g $RG --template-file main.bicep --mode Complete ...",
+    "verifica": "La distribuzione stampa `provisioningState: Succeeded` e l'output `indirizzoBlob`. Il secondo `what-if` non elenca modifiche: è la prova che il template descrive uno stato, non una sequenza di azioni.",
+    "pulizia": "`az group delete -n rg-lab-arm --yes --no-wait`\n`rm main.bicep esportato.json esportato.bicep`",
+    "lab": {
+      "t": "Lab 03 ufficiale: Manage Azure resources by using ARM Templates",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_03b-Manage_Azure_Resources_by_Using_ARM_Templates.html"
+    }
+  },
+  {
+    "id": "P15",
+    "d": 3,
+    "t": "Una macchina virtuale, i suoi dischi e la sua taglia",
+    "min": 40,
+    "costo": "ore",
+    "obiettivi": ["Create a virtual machine", "Manage virtual machine sizes", "Manage virtual machine disks"],
+    "perche": "Il dominio più pesante dell'esame comincia da qui. Le regole da avere nelle mani: per **ridimensionare** spesso va deallocata, un disco si **allarga** ma non si stringe mai, e una VM **spenta dal sistema operativo** continua a costare — solo `deallocate` ferma il conto.",
+    "serve": "Una sottoscrizione. **Questa VM costa a ore**: una B1s è di pochi centesimi l'ora, ma se resta accesa un mese si sente. Dealloca appena hai finito.",
+    "passi": [
+      "Crea una VM Linux piccola con IP pubblico.",
+      "Guarda le taglie disponibili nella region, poi dealloca e ridimensiona. Riavvia e verifica.",
+      "Aggiungi un disco dati nuovo da 32 GB, poi allargalo a 64. Prova a riportarlo a 32: non si può, e non c'è un modo.",
+      "Guarda la differenza fra `Stop` dal sistema operativo, `az vm stop` e `az vm deallocate` nello stato della VM: solo l'ultimo porta a `VM deallocated` e ferma la fatturazione del calcolo. **I dischi si pagano lo stesso.**",
+      "Nota il tipo di disco: `Premium_LRS`, `StandardSSD_LRS`, `Standard_LRS`. Il cambio si fa a VM deallocata."
+    ],
+    "cli": "RG=rg-lab-vm\naz group create -n $RG -l westeurope\n\naz vm create -g $RG -n vm-lab \\\n  --image Ubuntu2204 --size Standard_B1s \\\n  --admin-username azureuser --generate-ssh-keys \\\n  --public-ip-sku Standard\n\n# taglie disponibili qui\naz vm list-sizes -l westeurope --query \"[?contains(name,'Standard_B')].{taglia:name, cpu:numberOfCores, ram:memoryInMb}\" -o table\n\n# ridimensiona\naz vm deallocate -g $RG -n vm-lab\naz vm resize -g $RG -n vm-lab --size Standard_B2s\naz vm start -g $RG -n vm-lab\n\n# disco dati: si allarga, non si stringe\naz vm disk attach -g $RG --vm-name vm-lab --name disco-dati \\\n  --new --size-gb 32 --sku StandardSSD_LRS\naz vm deallocate -g $RG -n vm-lab\naz disk update -g $RG -n disco-dati --size-gb 64\naz disk update -g $RG -n disco-dati --size-gb 32   # fallisce, ed e' definitivo\n\n# lo stato che conta per la bolletta\naz vm get-instance-view -g $RG -n vm-lab --query \"instanceView.statuses[1].displayStatus\" -o tsv",
+    "verifica": "Dopo `deallocate` lo stato è `VM deallocated`; dopo `az vm stop` è `VM stopped`, e in quello stato **stai ancora pagando il calcolo**. Il comando che riporta il disco a 32 GB esce con un errore esplicito: quella è la risposta a una domanda d'esame ricorrente.",
+    "pulizia": "**Fallo subito, è la voce più cara di tutti i lab:**\n\n`az group delete -n rg-lab-vm --yes --no-wait`\n\nControlla dopo qualche minuto: `az group exists -n rg-lab-vm`. Se stai facendo anche P16 e P17, tieni il gruppo fino alla fine di P17 ma **dealloca la VM** fra una sessione e l'altra.",
+    "lab": {
+      "t": "Lab 08 ufficiale: Manage Virtual Machines",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_08-Manage_Virtual_Machines.html"
+    }
+  },
+  {
+    "id": "P16",
+    "d": 3,
+    "t": "Encryption at host, e spostare una VM",
+    "min": 30,
+    "costo": "ore",
+    "obiettivi": ["Configure encryption at host for Azure virtual machines", "Move a virtual machine to another resource group, subscription, or region"],
+    "perche": "**Encryption at host è l'unica novità vera della versione d'esame del 17 aprile 2026**: ha preso il posto di Azure Disk Encryption. Vale la pena farla una volta, perché ha due prerequisiti che l'esame usa come distrattori: la **feature va registrata sulla sottoscrizione** e la VM va **deallocata**. Lo spostamento invece ha la regola che frega tutti: dischi, NIC e IP devono spostarsi *insieme* alla VM.",
+    "serve": "La VM del lab P15. La registrazione della feature può metterci qualche minuto.",
+    "passi": [
+      "Registra la feature `EncryptionAtHost` e aspetta che risulti `Registered`.",
+      "Dealloca la VM e attiva la cifratura sull'host. Con la VM accesa il comando fallisce.",
+      "Riavvia e rileggi il profilo di sicurezza.",
+      "Crea un secondo resource group e sposta la VM: elenca **tutti** gli id collegati, non solo quello della VM. Con il solo id della VM il comando si rifiuta.",
+      "Nota che questo sposta fra resource group e sottoscrizioni, **non fra region**: per cambiare region servono Azure Resource Mover o Site Recovery. L'esame lo chiede spesso."
+    ],
+    "cli": "az feature register --namespace Microsoft.Compute --name EncryptionAtHost\naz feature show --namespace Microsoft.Compute --name EncryptionAtHost \\\n  --query properties.state -o tsv          # aspetta 'Registered'\naz provider register -n Microsoft.Compute\n\naz vm deallocate -g $RG -n vm-lab\naz vm update -g $RG -n vm-lab --set securityProfile.encryptionAtHost=true\naz vm start -g $RG -n vm-lab\n\naz vm show -g $RG -n vm-lab --query securityProfile\n\n# --- spostamento: tutto insieme\naz group create -n rg-lab-vm2 -l westeurope\nIDS=$(az resource list -g $RG --query \"[].id\" -o tsv | tr '\\n' ' ')\naz resource move --destination-group rg-lab-vm2 --ids $IDS",
+    "verifica": "`securityProfile` mostra `encryptionAtHost: true`. Se il comando di update fallisce dicendo che la taglia non è supportata, non hai sbagliato: **non tutte le taglie supportano encryption at host**, ed è un'altra cosa che l'esame chiede.",
+    "pulizia": "`az group delete -n rg-lab-vm2 --yes --no-wait`\n\nLa feature registrata non costa niente e può restare.",
+    "lab": {
+      "t": "Lab 08 ufficiale: Manage Virtual Machines",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_08-Manage_Virtual_Machines.html"
+    }
+  },
+  {
+    "id": "P17",
+    "d": 3,
+    "t": "Zone, set di disponibilità e scale set",
+    "min": 40,
+    "costo": "ore",
+    "obiettivi": ["Deploy virtual machines to availability zones and availability sets", "Deploy and configure an Azure Virtual Machine Scale Sets"],
+    "perche": "Qui l'esame chiede numeri e vincoli: un **availability set** protegge dai guasti dentro un datacenter (fault e update domain), le **zone** proteggono dal datacenter intero, e hanno SLA diversi. Il vincolo che casca sempre: una VM **non si può aggiungere a un set dopo**, va ricreata.",
+    "serve": "Una sottoscrizione, e una region con zone di disponibilità (westeurope ce le ha). **Si paga a ore**: due istanze di scale set contano come due VM.",
+    "passi": [
+      "Crea un availability set con 2 fault domain e 5 update domain, e mettici dentro una VM alla creazione.",
+      "Prova ad aggiungere al set una VM già esistente: non c'è un comando che lo faccia. Va ricreata dal disco.",
+      "Crea una VM in **zona 1** e nota che la zona si sceglie alla creazione e non si cambia.",
+      "Crea uno scale set con 2 istanze, poi portalo a 3 a mano.",
+      "Aggiungi una regola di **autoscale** su CPU e leggi come è fatta: metrica, soglia, finestra, di quanto scala. L'esame te la mostra e chiede cosa succede."
+    ],
+    "cli": "RG=rg-lab-ha\naz group create -n $RG -l westeurope\n\n# set di disponibilita'\naz vm availability-set create -g $RG -n avset \\\n  --platform-fault-domain-count 2 --platform-update-domain-count 5\n\naz vm create -g $RG -n vm-set --availability-set avset \\\n  --image Ubuntu2204 --size Standard_B1s \\\n  --admin-username azureuser --generate-ssh-keys\n\n# zona: si sceglie ora o mai piu'\naz vm create -g $RG -n vm-zona --zone 1 \\\n  --image Ubuntu2204 --size Standard_B1s \\\n  --admin-username azureuser --generate-ssh-keys --public-ip-sku Standard\n\n# scale set\naz vmss create -g $RG -n vmss-lab \\\n  --image Ubuntu2204 --vm-sku Standard_B1s --instance-count 2 \\\n  --admin-username azureuser --generate-ssh-keys\n\naz vmss scale -g $RG -n vmss-lab --new-capacity 3\n\n# autoscale\naz monitor autoscale create -g $RG --name auto-vmss \\\n  --resource vmss-lab --resource-type Microsoft.Compute/virtualMachineScaleSets \\\n  --min-count 2 --max-count 5 --count 2\n\naz monitor autoscale rule create -g $RG --autoscale-name auto-vmss \\\n  --condition \"Percentage CPU > 70 avg 5m\" --scale out 1",
+    "verifica": "`az vmss list-instances -g $RG -n vmss-lab -o table` elenca 3 istanze. `az monitor autoscale show -g $RG -n auto-vmss` mostra la regola con soglia 70 e finestra di 5 minuti: sono esattamente i campi che l'esame ti fa leggere.",
+    "pulizia": "**Qui ci sono cinque macchine che girano. Non lasciarle:**\n\n`az group delete -n rg-lab-ha --yes --no-wait`\n\nE se non l'hai già fatto: `az group delete -n rg-lab-vm --yes --no-wait`",
+    "lab": {
+      "t": "Lab 08 ufficiale: Manage Virtual Machines",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_08-Manage_Virtual_Machines.html"
+    }
+  },
+  {
+    "id": "P18",
+    "d": 3,
+    "t": "Container: registro, istanze e Container Apps",
+    "min": 40,
+    "costo": "ore",
+    "obiettivi": ["Create and manage an Azure Container Registry", "Provision a container by using Azure Container Instances", "Provision a container by using Azure Container Apps", "Manage sizing and scaling for containers, including Azure Container Instances and Azure Container Apps"],
+    "perche": "L'esame chiede **quale dei tre** usare: ACI per un container singolo che parte e finisce, Container Apps quando serve scalare (anche **a zero**) e avere revisioni. E su ACR chiede la differenza fra gli SKU: solo **Premium** ha la replica geografica.",
+    "serve": "Una sottoscrizione. **ACR Basic costa qualche euro al mese** e Container Apps ha un piano gratuito mensile ma l'ambiente resta attivo: cancella tutto a fine lab.",
+    "passi": [
+      "Crea un ACR **Basic** e nota negli SKU cosa cambia: spazio incluso, webhook, replica geografica solo in Premium.",
+      "Costruisci un'immagine direttamente nel registro con `az acr build`: non serve Docker in locale.",
+      "Avvia un container con **ACI** partendo da un'immagine pubblica, con CPU e memoria dichiarate e un nome DNS.",
+      "Guarda `restart policy`: `Always`, `OnFailure`, `Never`. Per un job che deve finire, `Always` è la risposta sbagliata.",
+      "Crea un ambiente **Container Apps** e un'app con ingress esterno e `min-replicas 0`: quando nessuno la chiama, scende a zero e non costa. È la differenza che l'esame cerca."
+    ],
+    "cli": "RG=rg-lab-cnt\naz group create -n $RG -l westeurope\n\n# registro\nACR=acrlab$RANDOM\naz acr create -g $RG -n $ACR --sku Basic\naz acr show -n $ACR --query \"{sku:sku.name, server:loginServer}\"\n\n# istanza singola\naz container create -g $RG -n aci-lab \\\n  --image mcr.microsoft.com/azuredocs/aci-helloworld \\\n  --ports 80 --ip-address Public \\\n  --cpu 1 --memory 1.5 \\\n  --restart-policy OnFailure \\\n  --dns-name-label acilab$RANDOM\n\naz container show -g $RG -n aci-lab --query \"{stato:instanceView.state, fqdn:ipAddress.fqdn}\"\n\n# container apps, con scala a zero\naz containerapp env create -g $RG -n env-lab -l westeurope\n\naz containerapp create -g $RG -n app-lab --environment env-lab \\\n  --image mcr.microsoft.com/azuredocs/containerapps-helloworld:latest \\\n  --target-port 80 --ingress external \\\n  --min-replicas 0 --max-replicas 3",
+    "verifica": "L'FQDN dell'ACI risponde nel browser. `az containerapp show -g $RG -n app-lab --query properties.configuration.ingress.fqdn` dà l'indirizzo dell'app; dopo qualche minuto senza traffico le repliche scendono a zero e la prima chiamata successiva è più lenta — è il **cold start**, ed è il prezzo dello scale-to-zero.",
+    "pulizia": "`az group delete -n rg-lab-cnt --yes --no-wait`\n\nL'ambiente Container Apps ci mette qualche minuto ad andarsene: ricontrolla con `az group exists -n rg-lab-cnt`.",
+    "lab": {
+      "t": "Lab 09b ufficiale: Implement Azure Container Instances",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_09b-Implement_Azure_Container_Instances.html"
+    }
+  },
+  {
+    "id": "P19",
+    "d": 3,
+    "t": "App Service: piano, app, scalabilità e slot",
+    "min": 40,
+    "costo": "ore",
+    "obiettivi": ["Provision an App Service plan", "Create an App Service", "Configure scaling for an App Service plan", "Configure deployment slots for an App Service"],
+    "perche": "Il nocciolo qui è che **il piano decide cosa puoi fare**. Con **B1** non hai né slot né autoscale: sono di Standard in su. È il tipo di vincolo che l'esame trasforma in «l'utente non trova l'opzione, perché?».",
+    "serve": "Una sottoscrizione. **B1 e S1 si pagano a ore.** Il piano F1 gratuito esiste ma non ha slot né scale, quindi per questo lab serve almeno B1.",
+    "passi": [
+      "Crea un piano **B1** Linux e una web app sopra.",
+      "Prova a creare uno slot: fallisce. Il messaggio nomina lo SKU.",
+      "Porta il piano a **S1** e riprova: adesso lo slot si crea.",
+      "Fai lo **swap** fra staging e produzione e guarda cosa si porta dietro: le impostazioni marcate come *deployment slot setting* **restano** dove sono, le altre viaggiano con l'app.",
+      "Distingui **scale up** (cambiare SKU del piano) da **scale out** (più istanze dello stesso piano): sono due voci diverse nel portale, e l'esame le confronta.",
+      "Aggiungi una regola di autoscale sul piano e nota che con B1 non compare proprio."
+    ],
+    "cli": "RG=rg-lab-app\naz group create -n $RG -l westeurope\nAPP=webapp$RANDOM\n\n# B1: niente slot, niente autoscale\naz appservice plan create -g $RG -n plan-lab --sku B1 --is-linux\naz webapp create -g $RG -p plan-lab -n $APP --runtime \"NODE:20-lts\"\n\naz webapp deployment slot create -g $RG -n $APP --slot staging   # fallisce con B1\n\n# scale up: cambia lo SKU del piano\naz appservice plan update -g $RG -n plan-lab --sku S1\n\naz webapp deployment slot create -g $RG -n $APP --slot staging   # ora va\naz webapp deployment slot swap -g $RG -n $APP --slot staging --target-slot production\n\n# scale out: piu' istanze dello stesso piano\naz appservice plan update -g $RG -n plan-lab --number-of-workers 3\n\naz appservice plan show -g $RG -n plan-lab \\\n  --query \"{sku:sku.name, istanze:sku.capacity}\"",
+    "verifica": "Il primo comando di slot esce con un errore che cita lo SKU; dopo il passaggio a S1 lo stesso comando riesce. È la dimostrazione pratica della domanda «perché non vedo gli slot».",
+    "pulizia": "**S1 con 3 istanze è la configurazione più cara di questa pagina.** Prima riporta le istanze a 1, poi butta tutto:\n\n`az appservice plan update -g rg-lab-app -n plan-lab --number-of-workers 1`\n`az group delete -n rg-lab-app --yes --no-wait`",
+    "lab": {
+      "t": "Lab 09a ufficiale: Implement Web Apps",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_09a-Implement_Web_Apps.html"
+    }
+  },
+  {
+    "id": "P20",
+    "d": 3,
+    "t": "App Service: TLS, dominio, backup e rete",
+    "min": 30,
+    "costo": "ore",
+    "obiettivi": ["Configure certificates and Transport Layer Security (TLS) for an App Service", "Map an existing custom DNS name to an App Service", "Configure backup for an App Service", "Configure networking settings for an App Service"],
+    "perche": "Quattro obiettivi che l'esame tratta come una lista di prerequisiti. Il **certificato gestito gratuito** esiste ma solo *dopo* aver mappato un dominio tuo; il **backup** vuole almeno Standard e un container di storage; l'**integrazione VNet** esce dall'app verso la rete, il **private endpoint** entra dalla rete verso l'app. Confonderli è l'errore classico.",
+    "serve": "L'app del lab P19, sul piano S1. Per il dominio personalizzato serve un dominio vero: se non ce l'hai, fai i passi come lettura guidata nel portale.",
+    "passi": [
+      "In `Custom domains` guarda i record che Azure chiede: un **CNAME** verso `<app>.azurewebsites.net` più un **TXT** di verifica `asuid.<sottodominio>`. Sapere quali sono i due record è già mezza domanda d'esame.",
+      "In `TLS/SSL settings` nota che il **certificato gestito gratuito** compare solo dopo la mappatura del dominio, e che `HTTPS Only` e la **versione minima di TLS** sono due interruttori distinti.",
+      "Attiva `HTTPS Only` e imposta TLS minimo 1.2 dalla CLI.",
+      "Configura un **backup**: serve un account di archiviazione con un container e un SAS. Nota che il backup include anche il database collegato, se lo dichiari.",
+      "In `Networking` distingui le tre voci: **VNet integration** (traffico in uscita), **private endpoint** (accesso in ingresso privato), **access restrictions** (regole per IP). L'esame le mette come opzioni della stessa domanda."
+    ],
+    "cli": "APP=<la tua app>\nRG=rg-lab-app\n\n# TLS: due interruttori diversi\naz webapp update -g $RG -n $APP --https-only true\naz webapp config set -g $RG -n $APP --min-tls-version 1.2\n\naz webapp config show -g $RG -n $APP \\\n  --query \"{tlsMinimo:minTlsVersion, soloHttps:httpsOnly}\"\n\n# restrizioni per IP\naz webapp config access-restriction add -g $RG -n $APP \\\n  --rule-name solo-io --action Allow --ip-address $(curl -s https://api.ipify.org)/32 --priority 100\n\naz webapp config access-restriction show -g $RG -n $APP\n\n# integrazione con la rete (uscita): serve una subnet delegata\n# az webapp vnet-integration add -g $RG -n $APP --vnet <vnet> --subnet <subnet>",
+    "verifica": "`httpsOnly` è `true` e `minTlsVersion` è `1.2`. Dopo la regola di restrizione, aprire l'app da un altro indirizzo — per esempio dal telefono in rete mobile — dà 403: è il modo più rapido per vedere che ha funzionato.",
+    "pulizia": "Togli la restrizione se vuoi continuare a usare l'app, poi butta il gruppo:\n\n`az webapp config access-restriction remove -g rg-lab-app -n $APP --rule-name solo-io`\n`az group delete -n rg-lab-app --yes --no-wait`",
+    "lab": {
+      "t": "Lab 09a ufficiale: Implement Web Apps",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_09a-Implement_Web_Apps.html"
+    }
+  }
+]

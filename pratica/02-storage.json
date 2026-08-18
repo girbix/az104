@@ -1,0 +1,167 @@
+[
+  {
+    "id": "P07",
+    "d": 2,
+    "t": "Account di archiviazione, ridondanza e cifratura",
+    "min": 30,
+    "costo": "centesimi",
+    "obiettivi": ["Create and configure storage accounts", "Configure Azure Storage redundancy", "Configure storage account encryption"],
+    "perche": "L'esame ama le domande su **cosa si può cambiare dopo**. La ridondanza sì, in parte; il nome no; la **infrastructure encryption** no, mai — si sceglie alla creazione e basta. Provare a cambiarle è il modo più rapido per non dimenticarlo.",
+    "serve": "Una sottoscrizione. Un account vuoto costa frazioni di centesimo al mese.",
+    "passi": [
+      "Crea un account **Standard_LRS** e uno con **infrastructure encryption** attiva, per vedere che è un'opzione della creazione.",
+      "Cambia il primo da LRS a **GRS**: funziona. Prova a portarlo a **ZRS**: non è una modifica diretta, richiede una conversione. Le combinazioni possibili sono materiale d'esame.",
+      "Guarda `Encryption` nel portale: la cifratura a riposo è **sempre attiva** e non si spegne. Quello che si sceglie è la chiave: gestita da Microsoft o tua in Key Vault (CMK).",
+      "Prova ad attivare l'infrastructure encryption su un account esistente: l'opzione è grigia."
+    ],
+    "cli": "RG=rg-lab-st\naz group create -n $RG -l westeurope\n\nSA=stlab$RANDOM\naz storage account create -n $SA -g $RG -l westeurope \\\n  --sku Standard_LRS --kind StorageV2 --access-tier Hot\n\n# doppia cifratura: solo alla creazione\naz storage account create -n stinfra$RANDOM -g $RG -l westeurope \\\n  --sku Standard_LRS --kind StorageV2 --require-infrastructure-encryption true\n\n# la ridondanza si cambia\naz storage account update -n $SA -g $RG --sku Standard_GRS\naz storage account show -n $SA -g $RG --query \"{sku:sku.name, cifratura:encryption.keySource}\"",
+    "verifica": "`sku` è passato a `Standard_GRS`. `encryption.keySource` dice `Microsoft.Storage`: è la chiave gestita da Microsoft, e conferma che la cifratura a riposo c'è anche se non l'hai chiesta.",
+    "pulizia": "`az group delete -n rg-lab-st --yes --no-wait` — tiene dentro tutti i lab di storage, quindi cancellalo alla fine di P13, non adesso.",
+    "lab": {
+      "t": "Lab 07 ufficiale: Manage Azure storage",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_07-Manage_Azure_Storage.html"
+    }
+  },
+  {
+    "id": "P08",
+    "d": 2,
+    "t": "Blob: container, tier, versioning e soft delete",
+    "min": 35,
+    "costo": "centesimi",
+    "obiettivi": ["Create and configure a container in Azure Blob Storage", "Configure storage tiers", "Configure blob versioning", "Configure soft delete for blobs and containers"],
+    "perche": "Qui l'esame chiede due cose che si confondono: **versioning** conserva le versioni a ogni sovrascrittura, **soft delete** recupera quello che hai cancellato. Sono interruttori diversi, e vanno attivati *prima* del guaio. E il tier **Archive** non si legge: prima va riportato online, e ci vogliono ore.",
+    "serve": "L'account del lab P07.",
+    "passi": [
+      "Attiva versioning, soft delete dei blob e soft delete dei container sull'account.",
+      "Crea un container e caricaci un file. Sovrascrivilo con un contenuto diverso: nasce una versione.",
+      "Cancella il blob e ritrovalo con `--include d`: c'è ancora, marcato come cancellato.",
+      "Sposta un blob in **Cool**, poi in **Archive**. Prova a scaricarlo: fallisce. Per riaverlo serve una **rehydration** a Hot o Cool, che richiede ore — l'esame lo chiede in forma di «quanto ci vuole».",
+      "Guarda il livello di accesso del container: `Private`, `Blob`, `Container`. La differenza fra gli ultimi due (uno espone il singolo blob, l'altro anche l'elenco) è una domanda classica."
+    ],
+    "cli": "SA=<il tuo account>\nRG=rg-lab-st\n\naz storage account blob-service-properties update --account-name $SA -g $RG \\\n  --enable-versioning true \\\n  --enable-delete-retention true --delete-retention-days 7 \\\n  --enable-container-delete-retention true --container-delete-retention-days 7\n\naz storage container create --account-name $SA -n dati --auth-mode login\n\necho \"versione uno\" > prova.txt\naz storage blob upload --account-name $SA -c dati -f prova.txt -n prova.txt --auth-mode login\necho \"versione due\" > prova.txt\naz storage blob upload --account-name $SA -c dati -f prova.txt -n prova.txt --overwrite --auth-mode login\n\n# le versioni\naz storage blob list --account-name $SA -c dati --include v \\\n  --query \"[].{nome:name, versione:versionId}\" -o table --auth-mode login\n\n# cancella e ritrova\naz storage blob delete --account-name $SA -c dati -n prova.txt --auth-mode login\naz storage blob list --account-name $SA -c dati --include d -o table --auth-mode login\n\n# tier\naz storage blob set-tier --account-name $SA -c dati -n prova.txt --tier Cool --auth-mode login",
+    "verifica": "L'elenco con `--include v` mostra due `versionId` per lo stesso nome. Dopo il delete, l'elenco normale è vuoto ma quello con `--include d` no: è il soft delete che ha funzionato.",
+    "pulizia": "Il container e i blob se ne vanno con il resource group alla fine di P13. Se vuoi liberare subito:\n\n`az storage container delete --account-name $SA -n dati --auth-mode login`\n\nCon il soft delete attivo il container resta recuperabile per 7 giorni: è il comportamento giusto, non un errore.",
+    "lab": {
+      "t": "Lab 07 ufficiale: Manage Azure storage",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_07-Manage_Azure_Storage.html"
+    }
+  },
+  {
+    "id": "P09",
+    "d": 2,
+    "t": "Lifecycle: far scendere i blob da soli",
+    "min": 20,
+    "costo": "centesimi",
+    "obiettivi": ["Configure blob lifecycle management"],
+    "perche": "La regola si scrive in JSON, e l'esame te ne mostra una chiedendo cosa fa. I punti su cui casca la gente: le regole valgono **solo per i blob a blocchi**, il conteggio dei giorni parte dall'**ultima modifica** (o dall'ultimo accesso, se lo attivi), e la valutazione gira **una volta al giorno** — non succede niente all'istante.",
+    "serve": "L'account e il container del lab P08.",
+    "passi": [
+      "Scrivi una regola: dopo 30 giorni senza modifiche → Cool, dopo 90 → Archive, dopo 365 → cancella.",
+      "Applicala all'account, limitandola al prefisso `dati/`.",
+      "Rileggila con `show` e confronta il JSON con quello che hai scritto: è la forma che l'esame ti mette davanti.",
+      "Nel portale, `Lifecycle management` → `List view`: la stessa regola vista come modulo. Sapere che sono la stessa cosa evita di rispondere «non si può fare dal portale»."
+    ],
+    "cli": "cat > regola.json <<'FINE'\n{\n  \"rules\": [{\n    \"enabled\": true,\n    \"name\": \"scendi-e-cancella\",\n    \"type\": \"Lifecycle\",\n    \"definition\": {\n      \"filters\": {\n        \"blobTypes\": [\"blockBlob\"],\n        \"prefixMatch\": [\"dati/\"]\n      },\n      \"actions\": {\n        \"baseBlob\": {\n          \"tierToCool\":    { \"daysAfterModificationGreaterThan\": 30 },\n          \"tierToArchive\": { \"daysAfterModificationGreaterThan\": 90 },\n          \"delete\":        { \"daysAfterModificationGreaterThan\": 365 }\n        }\n      }\n    }\n  }]\n}\nFINE\n\naz storage account management-policy create \\\n  --account-name $SA -g $RG --policy @regola.json\n\naz storage account management-policy show --account-name $SA -g $RG",
+    "verifica": "`show` restituisce la regola con `enabled: true`. Non aspettarti di vedere blob cambiare tier oggi: la valutazione parte una volta al giorno, e la prima esecuzione può metterci fino a 24 ore.",
+    "pulizia": "`az storage account management-policy delete --account-name $SA -g $RG`\n\nE cancella il file locale: `rm regola.json`",
+    "lab": {
+      "t": "Lab 07 ufficiale: Manage Azure storage",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_07-Manage_Azure_Storage.html"
+    }
+  },
+  {
+    "id": "P10",
+    "d": 2,
+    "t": "SAS, criteri di accesso archiviati e chiavi",
+    "min": 35,
+    "costo": "gratis",
+    "obiettivi": ["Create and use shared access signature (SAS) tokens", "Configure stored access policies", "Manage access keys"],
+    "perche": "Questa è la domanda d'esame più prevedibile del dominio: **come si revoca un SAS già distribuito**. Un SAS ad hoc non si revoca — puoi solo rigenerare la chiave, e così ammazzi *tutti* i SAS. Se invece l'hai legato a un **criterio di accesso archiviato**, cancelli il criterio e muore solo quello. Farlo una volta ti risparmia di ragionarci sotto esame.",
+    "serve": "L'account e il container del lab P08.",
+    "passi": [
+      "Genera un SAS ad hoc di sola lettura sul container e provalo con `curl`.",
+      "Crea un **criterio di accesso archiviato** sul container e genera un secondo SAS che vi si appoggia.",
+      "Cancella il criterio: il secondo SAS smette di funzionare all'istante, il primo continua.",
+      "Rigenera la chiave primaria: adesso muore anche il primo, e con lui qualunque altro SAS firmato con quella chiave.",
+      "Nota la differenza fra SAS di **servizio**, di **account** e **user delegation** (firmato con Entra ID invece che con la chiave): l'ultimo è quello che il portale usa quando scegli «Microsoft Entra ID» come metodo."
+    ],
+    "cli": "SA=<il tuo account>\nRG=rg-lab-st\nKEY=$(az storage account keys list -n $SA -g $RG --query \"[0].value\" -o tsv)\n\n# 1) SAS ad hoc\nSAS1=$(az storage container generate-sas --account-name $SA --account-key $KEY \\\n  -n dati --permissions rl --expiry 2026-12-31T00:00Z -o tsv)\ncurl -s \"https://$SA.blob.core.windows.net/dati?restype=container&comp=list&$SAS1\" | head -c 200\n\n# 2) criterio archiviato, e un SAS che ci si appoggia\naz storage container policy create --account-name $SA --account-key $KEY \\\n  -c dati -n solo-lettura --permissions rl --expiry 2026-12-31T00:00Z\n\nSAS2=$(az storage container generate-sas --account-name $SA --account-key $KEY \\\n  -n dati --policy-name solo-lettura -o tsv)\n\n# 3) revoca mirata\naz storage container policy delete --account-name $SA --account-key $KEY \\\n  -c dati -n solo-lettura\n\n# 4) revoca totale\naz storage account keys renew -n $SA -g $RG --key primary",
+    "verifica": "Dopo il passo 3 la richiesta con `$SAS2` risponde con un errore di autenticazione e quella con `$SAS1` no. Dopo il passo 4 falliscono tutte e due. È esattamente lo scenario che l'esame descrive a parole.",
+    "pulizia": "Niente da cancellare: chiavi e criteri vivono dentro l'account, che se ne va con il resource group alla fine di P13.",
+    "lab": {
+      "t": "Lab 07 ufficiale: Manage Azure storage",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_07-Manage_Azure_Storage.html"
+    }
+  },
+  {
+    "id": "P11",
+    "d": 2,
+    "t": "Firewall dello storage e accesso dalla rete",
+    "min": 25,
+    "costo": "gratis",
+    "obiettivi": ["Configure Azure Storage firewalls and virtual networks"],
+    "perche": "Il momento in cui chiudi il firewall e ti tagli fuori da solo è il momento in cui impari `--bypass` e le regole per indirizzo IP. L'esame lo chiede al contrario: «l'accesso non funziona più, cosa hai sbagliato».",
+    "serve": "L'account del lab P07 e il tuo indirizzo IP pubblico.",
+    "passi": [
+      "Metti `Default action` su **Deny** e prova a elencare i blob: adesso ti rifiuta.",
+      "Aggiungi il tuo IP pubblico come regola e riprova: torna a funzionare.",
+      "Guarda `--bypass`: `AzureServices` è quello che lascia entrare i servizi Microsoft, ed è la casella che l'esame fa togliere per creare il guasto.",
+      "Nota che il firewall **non blocca** chi entra con RBAC dal portale se hai spuntato «Add your client IP address»: l'esame gioca su questa differenza fra piano dati e piano di controllo."
+    ],
+    "cli": "MIOIP=$(curl -s https://api.ipify.org)\necho \"il mio IP: $MIOIP\"\n\n# chiudi tutto\naz storage account update -n $SA -g $RG --default-action Deny --bypass AzureServices\naz storage blob list --account-name $SA -c dati --auth-mode login -o table   # ora fallisce\n\n# riapri solo a te\naz storage account network-rule add -n $SA -g $RG --ip-address $MIOIP\naz storage blob list --account-name $SA -c dati --auth-mode login -o table   # ora va\n\naz storage account show -n $SA -g $RG --query networkRuleSet",
+    "verifica": "`networkRuleSet` mostra `defaultAction: Deny`, il tuo IP fra le `ipRules` e `bypass: AzureServices`. Se dopo aver aggiunto l'IP continua a rifiutare, aspetta un minuto: la regola impiega qualche istante a propagarsi.",
+    "pulizia": "Riapri prima di andartene, altrimenti i lab successivi falliscono senza spiegazione:\n\n`az storage account update -n $SA -g $RG --default-action Allow`",
+    "lab": {
+      "t": "Lab 07 ufficiale: Manage Azure storage",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_07-Manage_Azure_Storage.html"
+    }
+  },
+  {
+    "id": "P12",
+    "d": 2,
+    "t": "Azure Files: condivisione, snapshot e soft delete",
+    "min": 30,
+    "costo": "centesimi",
+    "obiettivi": ["Create and configure a file share in Azure Files", "Configure snapshots and soft delete for Azure Files", "Configure identity-based access for Azure Files"],
+    "perche": "Azure Files ha interruttori **suoi**, separati da quelli dei blob: il soft delete dei file sta sotto `File service`, non sotto `Blob service`. L'esame ci costruisce sopra domande in cui hai attivato la cosa giusta nel posto sbagliato.",
+    "serve": "L'account del lab P07.",
+    "passi": [
+      "Crea una condivisione con quota e carica un file.",
+      "Attiva il **soft delete** delle condivisioni, dal servizio File.",
+      "Fai uno **snapshot** della condivisione, modifica il file, e nota che lo snapshot conserva la versione di prima.",
+      "Cancella la condivisione e ritrovala fra quelle cancellate: si ripristina.",
+      "Per l'accesso basato su identità apri nel portale `File shares` → `Active Directory`: ci sono tre strade — AD DS on-premise, Microsoft Entra Domain Services, Microsoft Entra Kerberos. Non serve configurarle qui: serve **sapere che sono tre** e che senza una di queste l'accesso passa solo dalla chiave dell'account."
+    ],
+    "cli": "az storage share-rm create --storage-account $SA -g $RG \\\n  -n condivisione --quota 100 --access-tier TransactionOptimized\n\nKEY=$(az storage account keys list -n $SA -g $RG --query \"[0].value\" -o tsv)\necho \"contenuto originale\" > doc.txt\naz storage file upload --account-name $SA --account-key $KEY \\\n  -s condivisione --source doc.txt\n\n# soft delete: e' del servizio File, non del Blob\naz storage account file-service-properties update -n $SA -g $RG \\\n  --enable-delete-retention true --delete-retention-days 7\n\n# snapshot\naz storage share snapshot -n condivisione --account-name $SA --account-key $KEY\naz storage share list --account-name $SA --account-key $KEY --include-snapshots -o table",
+    "verifica": "L'elenco con `--include-snapshots` mostra la condivisione due volte: una senza data e una con lo snapshot. Dopo aver cancellato la condivisione, `az storage share-rm list --storage-account $SA -g $RG --include-deleted` la mostra ancora, con `deleted: true`.",
+    "pulizia": "`az storage share-rm delete --storage-account $SA -g $RG -n condivisione --yes`\n\nCon il soft delete attivo resta recuperabile 7 giorni e continua a occupare spazio: se vuoi liberarlo subito, riporta `--delete-retention-days` a 1 o disattiva la ritenzione prima di cancellare.",
+    "lab": {
+      "t": "Lab 07 ufficiale: Manage Azure storage",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_07-Manage_Azure_Storage.html"
+    }
+  },
+  {
+    "id": "P13",
+    "d": 2,
+    "t": "AzCopy, Storage Explorer e replica degli oggetti",
+    "min": 30,
+    "costo": "centesimi",
+    "obiettivi": ["Manage data by using Azure Storage Explorer and AzCopy", "Configure object replication"],
+    "perche": "AzCopy è lo strumento che l'esame nomina quando la domanda dice «migliaia di file, minimo sforzo». La **object replication** invece ha tre prerequisiti che l'esame usa come distrattori: versioning e change feed sull'origine, versioning sulla destinazione, e vale **solo per i blob a blocchi**.",
+    "serve": "L'account del lab P07 più un secondo account come destinazione. AzCopy si scarica gratis; nella Cloud Shell c'è già.",
+    "passi": [
+      "Copia una cartella locale nel container con `azcopy copy --recursive`, autenticandoti con `azcopy login`.",
+      "Sincronizza con `azcopy sync` e nota la differenza: `copy` ricopia, `sync` allinea e può cancellare.",
+      "Apri Storage Explorer (o la sua versione nel portale) e ritrova gli stessi file: serve a sapere che esiste e che parla lo stesso storage.",
+      "Crea un secondo account, attiva versioning e change feed sull'origine e versioning sulla destinazione, poi crea la policy di replica.",
+      "Carica un blob nell'origine e aspetta: compare nella destinazione. La replica è **asincrona**, quindi «immediatamente» è sempre la risposta sbagliata."
+    ],
+    "cli": "# --- AzCopy\nazcopy login\nazcopy copy \"./unacartella\" \"https://$SA.blob.core.windows.net/dati\" --recursive\nazcopy sync \"./unacartella\" \"https://$SA.blob.core.windows.net/dati\" --recursive\n\n# --- replica degli oggetti\nSA2=stdest$RANDOM\naz storage account create -n $SA2 -g $RG -l northeurope --sku Standard_LRS\n\naz storage account blob-service-properties update --account-name $SA -g $RG \\\n  --enable-versioning true --enable-change-feed true\naz storage account blob-service-properties update --account-name $SA2 -g $RG \\\n  --enable-versioning true\n\naz storage container create --account-name $SA2 -n dati --auth-mode login\n\naz storage account or-policy create --account-name $SA2 -g $RG \\\n  --source-account $SA --destination-account $SA2 \\\n  --source-container dati --destination-container dati",
+    "verifica": "`az storage account or-policy list --account-name $SA2 -g $RG` mostra la policy con il suo `policyId`. Un blob caricato nell'origine compare nella destinazione entro qualche minuto — non subito.",
+    "pulizia": "Adesso sì, si butta tutto:\n\n`az group delete -n rg-lab-st --yes --no-wait`\n\nControlla dopo qualche minuto con `az group exists -n rg-lab-st` che risponda `false`.",
+    "lab": {
+      "t": "Lab 07 ufficiale: Manage Azure storage",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_07-Manage_Azure_Storage.html"
+    }
+  }
+]

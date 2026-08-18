@@ -1,0 +1,370 @@
+<title>Pratica AZ-104 — lab guidati in italiano</title>
+
+<style>
+:root{
+  --paper:#EEF1F2; --card:#FFFFFF; --card-2:#F7F9F9;
+  --line:#D3DBDE; --line-2:#E4EAEC;
+  --text:#101A22; --text-2:#4A5A63; --text-3:#71838C;
+  --accent:#0F7C91; --accent-2:#0B5F70; --accent-soft:#DCEEF1;
+  --signal:#C77F1A; --signal-soft:#FBF0DC;
+  --good:#2E7D5B; --good-soft:#DDEFE6;
+  --bad:#B23A2B; --bad-soft:#F8E2DE;
+  --shadow:0 1px 2px rgba(16,26,34,.06),0 4px 16px rgba(16,26,34,.06);
+  --font-ui:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif;
+  --font-dis:"Segoe UI Variable Display","Segoe UI Semibold","Segoe UI",system-ui,sans-serif;
+  --font-mono:"Cascadia Mono",Consolas,"SF Mono",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root{
+  --paper:#0B1319; --card:#141F27; --card-2:#101A21;
+  --line:#2B3A45; --line-2:#22303A;
+  --text:#E6EDEF; --text-2:#A3B4BD; --text-3:#7C8F99;
+  --accent:#3AA8BE; --accent-2:#5FC2D6; --accent-soft:#15323A;
+  --signal:#E0A244; --signal-soft:#33280F;
+  --good:#4CAF83; --good-soft:#122C22;
+  --bad:#E0705C; --bad-soft:#331A16;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 18px rgba(0,0,0,.3);
+}}
+:root[data-theme="dark"]{
+  --paper:#0B1319; --card:#141F27; --card-2:#101A21;
+  --line:#2B3A45; --line-2:#22303A;
+  --text:#E6EDEF; --text-2:#A3B4BD; --text-3:#7C8F99;
+  --accent:#3AA8BE; --accent-2:#5FC2D6; --accent-soft:#15323A;
+  --signal:#E0A244; --signal-soft:#33280F;
+  --good:#4CAF83; --good-soft:#122C22;
+  --bad:#E0705C; --bad-soft:#331A16;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 18px rgba(0,0,0,.3);
+}
+:root[data-theme="light"]{
+  --paper:#EEF1F2; --card:#FFFFFF; --card-2:#F7F9F9;
+  --line:#D3DBDE; --line-2:#E4EAEC;
+  --text:#101A22; --text-2:#4A5A63; --text-3:#71838C;
+  --accent:#0F7C91; --accent-2:#0B5F70; --accent-soft:#DCEEF1;
+  --signal:#C77F1A; --signal-soft:#FBF0DC;
+  --good:#2E7D5B; --good-soft:#DDEFE6;
+  --bad:#B23A2B; --bad-soft:#F8E2DE;
+  --shadow:0 1px 2px rgba(0,0,0,.06),0 4px 16px rgba(16,26,34,.06);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--text);font-family:var(--font-ui);
+  font-size:15px;line-height:1.55;-webkit-text-size-adjust:100%}
+h1,h2,h3{font-family:var(--font-dis);font-weight:600;line-height:1.25}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code{font-family:var(--font-mono);font-size:.88em;background:var(--card-2);
+  border:1px solid var(--line-2);border-radius:4px;padding:1px 4px;overflow-wrap:anywhere}
+
+.top{position:sticky;top:38px;z-index:40;background:var(--card);border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:14px;padding:0 16px;height:54px}
+.brand{display:flex;align-items:baseline;gap:8px;font-family:var(--font-dis);font-weight:600;
+  font-size:15px;white-space:nowrap}
+.brand span{font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--accent);
+  border:1px solid var(--accent);border-radius:3px;padding:1px 5px}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.btn{background:var(--card);border:1px solid var(--line);border-radius:7px;padding:6px 11px;
+  cursor:pointer;font-size:13px;font-weight:500;color:var(--text-2);font-family:inherit}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.cerca{background:var(--card);border:1px solid var(--line);border-radius:7px;padding:6px 10px;
+  font-size:13px;color:var(--text);width:200px;font-family:inherit}
+
+.wrap{max-width:1180px;margin:0 auto;padding:20px 16px 60px;
+  display:grid;grid-template-columns:230px 1fr;gap:26px;align-items:start}
+.rail{position:sticky;top:108px;max-height:calc(100vh - 130px);overflow-y:auto}
+.dom-h{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);
+  font-weight:600;margin:14px 0 5px}
+.dom-h:first-child{margin-top:0}
+.nav-l{display:block;width:100%;text-align:left;background:none;border:0;cursor:pointer;
+  padding:5px 8px;border-radius:6px;font-size:13px;color:var(--text-2);line-height:1.35;
+  font-family:inherit}
+.nav-l:hover{background:var(--card);color:var(--text)}
+.nav-l.fatto::before{content:"✓ ";color:var(--good);font-weight:700}
+
+.intro{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;
+  margin-bottom:18px;box-shadow:var(--shadow)}
+.intro h1{font-size:21px;margin-bottom:7px}
+.intro p{margin:0;color:var(--text-2);font-size:14px;max-width:70ch}
+.intro p+p{margin-top:9px}
+
+.avviso{margin-top:13px;padding:11px 13px;background:var(--signal-soft);
+  border-left:3px solid var(--signal);border-radius:0 8px 8px 0;font-size:13.5px;color:var(--text-2)}
+.avviso strong{color:var(--text)}
+
+.lab{background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:16px;
+  box-shadow:var(--shadow);overflow:hidden;scroll-margin-top:104px}
+.lab.puntato{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft),var(--shadow)}
+.lab-h{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:12px 20px;
+  border-bottom:1px solid var(--line-2);background:var(--card-2)}
+.lab-h h2{font-size:16.5px;flex:1;min-width:0}
+.num{font-family:var(--font-mono);font-size:11.5px;font-weight:700;color:var(--accent-2)}
+.chip{font-size:11px;font-weight:600;border-radius:20px;padding:2px 9px;white-space:nowrap}
+.chip.t{background:var(--accent-soft);color:var(--accent-2)}
+.chip.c-gratis{background:var(--good-soft);color:var(--good)}
+.chip.c-centesimi{background:var(--signal-soft);color:var(--signal)}
+.chip.c-ore{background:var(--bad-soft);color:var(--bad)}
+
+.lab-b{padding:16px 20px 4px}
+.sez{margin-bottom:14px}
+.sez h3{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);
+  margin-bottom:5px}
+.sez p{color:var(--text-2);font-size:14.5px}
+.sez ol,.sez ul{margin:0;padding-left:20px;color:var(--text-2);font-size:14.5px}
+.sez li{margin-bottom:4px}
+.sez.pulizia{background:var(--bad-soft);border-radius:8px;padding:11px 13px}
+.sez.pulizia h3{color:var(--bad)}
+pre{background:var(--card-2);border:1px solid var(--line-2);border-radius:8px;padding:11px 13px;
+  overflow-x:auto;font-family:var(--font-mono);font-size:12.5px;line-height:1.6;color:var(--text)}
+pre code{background:none;border:0;padding:0;font-size:inherit}
+
+.lab-f{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:11px 20px;
+  border-top:1px solid var(--line-2);background:var(--card-2);font-size:13px}
+.lab-f a{white-space:nowrap}
+.segna{margin-left:auto}
+.segna.on{background:var(--good-soft);border-color:var(--good);color:var(--good)}
+
+.vuoto{color:var(--text-3);font-size:14px}
+
+@media (max-width:860px){
+  .wrap{grid-template-columns:1fr;gap:14px}
+  .rail{position:static;max-height:none;border-bottom:1px solid var(--line);padding-bottom:12px}
+  .cerca{width:130px}
+}
+/* ---------- barra di sito ----------
+   Uguale su tutte e cinque le pagine: da qualunque punto si torna alla home o
+   si passa a un'altra sezione. Sta sopra l'header della pagina, che infatti si
+   incolla a 38px e non a zero.
+   I nomi delle variabili sono doppi perche' le pagine hanno due sistemi di
+   token: --card/--text (teoria e simulatore) e --surface/--ink (home e
+   ripasso). Il primo che esiste vince; nessuna pagina li ha tutti e due. */
+.sitenav{position:sticky;top:0;z-index:60;height:38px;display:flex;align-items:center;gap:2px;
+  padding:0 12px;background:var(--card,var(--surface));border-bottom:1px solid var(--line);
+  font:500 13px/1 var(--font-ui,var(--sans,system-ui));overflow-x:auto;scrollbar-width:none}
+.sitenav::-webkit-scrollbar{display:none}
+.sitenav a,.sitenav button{flex:none;padding:6px 10px;border:0;border-radius:6px;background:none;
+  color:var(--text-2,var(--ink-2));text-decoration:none;cursor:pointer;font:inherit;
+  white-space:nowrap}
+.sitenav a:hover,.sitenav button:hover{background:var(--accent-soft);color:var(--accent)}
+.sitenav a[aria-current="page"]{color:var(--text,var(--ink));font-weight:600;
+  background:var(--accent-soft)}
+.sitenav .ric{margin-left:auto;color:var(--signal,var(--warn))}
+</style>
+
+<nav class="sitenav" aria-label="Sezioni del sito">
+  <a href="index.html">Home</a>
+  <a href="studia.html">Teoria</a>
+  <a href="pratica.html" aria-current="page">Pratica</a>
+  <a href="ripasso.html">Ripasso</a>
+  <a href="simulatore.html">Simulatore</a>
+  <button class="ric" type="button" id="ricomincia" title="Riporta le domande a come erano il primo giorno">↺ Ricomincia le domande</button>
+</nav>
+<header class="top">
+  <div class="brand">Pratica <span>AZ-104</span></div>
+  <div class="top-right">
+    <input class="cerca" id="cerca" type="search" placeholder="Cerca nei lab…" aria-label="Cerca">
+    <button class="btn" id="tema" type="button">Tema</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <aside class="rail" id="rail"></aside>
+  <main id="main"></main>
+</div>
+
+<script>
+"use strict";
+const LAB = /*__DATI__*/[];
+
+const DOM_IT = {
+  1:"Identità e governance", 2:"Storage", 3:"Compute",
+  4:"Rete virtuale", 5:"Monitoraggio e manutenzione"
+};
+const COSTO_IT = {
+  gratis:"gratis", centesimi:"pochi centesimi", ore:"si paga a ore"
+};
+
+/* quali lab hai gia' fatto, in locale */
+const K = "az104:pratica";
+let fatti = {};
+try { fatti = JSON.parse(localStorage.getItem(K) || "{}"); } catch(e){ fatti = {}; }
+const salva = () => { try { localStorage.setItem(K, JSON.stringify(fatti)); } catch(e){} };
+
+const esc = s => String(s).replace(/[&<>"']/g, c =>
+  ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+
+/* Grassetto e code span, niente di piu': i lab sono testo e comandi, e un
+   parser completo qui varrebbe solo a farsi male con le pipe della shell. */
+function rendi(t){
+  return "<p>" + esc(t)
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\n\n/g, "</p><p>") + "</p>";
+}
+function inline(t){
+  return esc(t)
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/`([^`]+)`/g, "<code>$1</code>");
+}
+
+let filtro = "";
+function visibili(){
+  if(!filtro) return LAB;
+  const q = filtro.toLowerCase();
+  return LAB.filter(l =>
+    (l.t + " " + l.perche + " " + l.passi.join(" ") + " " + (l.cli || "") + " " +
+     l.obiettivi.join(" ")).toLowerCase().includes(q));
+}
+
+function disegnaRail(){
+  const lista = visibili();
+  const rail = document.getElementById("rail");
+  let html = "", dom = null;
+  lista.forEach((l, i) => {
+    if(l.d !== dom){ dom = l.d; html += '<div class="dom-h">' + esc(DOM_IT[l.d]) + "</div>"; }
+    html += '<button class="nav-l' + (fatti[l.id] ? " fatto" : "") + '" data-i="' + i + '">' +
+            esc(l.t) + "</button>";
+  });
+  rail.innerHTML = html || '<p class="vuoto">Nessun risultato.</p>';
+  rail.querySelectorAll(".nav-l").forEach(b => {
+    b.onclick = () => {
+      const el = document.getElementById("lab-" + b.dataset.i);
+      if(el) el.scrollIntoView({ behavior:"smooth", block:"start" });
+    };
+  });
+}
+
+function disegna(){
+  const lista = visibili();
+  const main = document.getElementById("main");
+  disegnaRail();
+
+  const n = Object.keys(fatti).length;
+  let out = '<div class="intro"><h1>I lab, uno per volta</h1>' +
+    "<p>Le domande d'esame sono scritte dal punto di vista di chi il portale ce l'ha aperto: " +
+    "quale voce sta sotto quale menu, cosa si può ancora cambiare dopo aver creato la risorsa. " +
+    "Quello si sa per averlo fatto. Qui ci sono <strong>" + LAB.length + " lab</strong> sui " +
+    "compiti che l'esame chiede davvero, con i comandi pronti, come verificare che sia andata, " +
+    "e come smontare tutto. <strong>" + n + " di " + LAB.length + "</strong> segnati come fatti.</p>" +
+    '<div class="avviso"><strong>Prima di cominciare.</strong> Serve una sottoscrizione Azure: ' +
+    "l'account gratuito dà 200 $ di credito per 30 giorni più i servizi sempre gratuiti — " +
+    "quei 30 giorni partono all'attivazione, quindi conviene aprirlo quando hai davvero il tempo " +
+    "di fare i lab. Il chip su ogni lab dice quanto costa. <strong>La sezione Pulizia non è " +
+    "un consiglio</strong>: una macchina virtuale accesa e dimenticata si mangia il credito in " +
+    "pochi giorni.</p></div>" +
+    "<p>I comandi sono scritti per la <strong>Azure CLI</strong>, che è la via più veloce e si " +
+    "incolla nella Cloud Shell del portale senza installare niente. Dove l'esame chiede di " +
+    "sapere <em>dove sta</em> una voce nel portale, il lab lo dice a parole.</p></div>";
+
+  if(!lista.length){
+    out += '<div class="lab"><p class="vuoto" style="padding:16px 20px">Nessun lab contiene «' +
+           esc(filtro) + '».</p></div>';
+  }
+
+  lista.forEach((l, i) => {
+    out += '<article class="lab" id="lab-' + i + '">' +
+      '<div class="lab-h"><span class="num">' + esc(l.id) + "</span>" +
+        "<h2>" + esc(l.t) + "</h2>" +
+        '<span class="chip t">' + l.min + " min</span>" +
+        '<span class="chip c-' + esc(l.costo) + '">' + esc(COSTO_IT[l.costo] || l.costo) + "</span>" +
+      "</div>" +
+      '<div class="lab-b">' +
+        '<div class="sez"><h3>Perché all\'esame</h3>' + rendi(l.perche) + "</div>" +
+        (l.serve ? '<div class="sez"><h3>Serve</h3>' + rendi(l.serve) + "</div>" : "") +
+        '<div class="sez"><h3>Cosa fai</h3><ol>' +
+          l.passi.map(p => "<li>" + inline(p) + "</li>").join("") + "</ol></div>" +
+        (l.cli ? '<div class="sez"><h3>Comandi</h3><pre><code>' + esc(l.cli) + "</code></pre></div>" : "") +
+        '<div class="sez"><h3>Come sai che è andata</h3>' + rendi(l.verifica) + "</div>" +
+        '<div class="sez pulizia"><h3>Pulizia</h3>' + rendi(l.pulizia) + "</div>" +
+      "</div>" +
+      '<div class="lab-f">' +
+        l.obiettivi.map(o =>
+          '<a href="studia.html?o=' + encodeURIComponent(o) + '">↑ teoria</a>' +
+          '<a href="simulatore.html?sub=' + encodeURIComponent(o) + '">→ domande</a>'
+        ).slice(0, 2).join("") +
+        (l.lab ? '<a href="' + esc(l.lab.u) + '" target="_blank" rel="noopener noreferrer">' +
+                 "↗ " + esc(l.lab.t) + "</a>" : "") +
+        '<button class="btn segna' + (fatti[l.id] ? " on" : "") + '" data-id="' + esc(l.id) + '">' +
+          (fatti[l.id] ? "✓ Fatto" : "Segna fatto") + "</button>" +
+      "</div></article>";
+  });
+
+  main.innerHTML = out;
+
+  main.querySelectorAll(".segna").forEach(b => {
+    b.onclick = () => {
+      const id = b.dataset.id;
+      if(fatti[id]) delete fatti[id]; else fatti[id] = 1;
+      salva();
+      b.classList.toggle("on", !!fatti[id]);
+      b.textContent = fatti[id] ? "✓ Fatto" : "Segna fatto";
+      disegnaRail();
+    };
+  });
+}
+
+document.getElementById("cerca").addEventListener("input", e => {
+  filtro = e.target.value.trim();
+  disegna();
+});
+
+document.getElementById("tema").addEventListener("click", () => {
+  const ora = document.documentElement.dataset.theme ||
+    (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  const nuovo = ora === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = nuovo;
+  try { localStorage.setItem("az104:tema", nuovo); } catch(e){}
+});
+(function tema(){
+  try {
+    const t = localStorage.getItem("az104:tema");
+    if(t) document.documentElement.dataset.theme = t;
+  } catch(e){}
+})();
+
+disegna();
+
+/* Rimando da un'altra pagina: pratica.html?o=<obiettivo ufficiale>.
+   Ci arriva chi sta leggendo una lezione e vuole provarla con le mani. */
+(function rimando(){
+  const o = new URLSearchParams(location.search).get("o");
+  if(!o) return;
+  const i = visibili().findIndex(l => l.obiettivi.includes(o));
+  if(i < 0) return;
+  const card = document.getElementById("lab-" + i);
+  if(!card) return;
+  card.scrollIntoView({ block:"start" });
+  card.classList.add("puntato");
+  setTimeout(() => card.classList.remove("puntato"), 2600);
+})();
+
+/* Ricomincia: le domande tornano tutte come non viste. Il pulsante sta nella
+   barra di sito, quindi si trova da qualunque pagina.
+   Non tocca la teoria: rifare le domande e' una cosa, dimenticare le lezioni
+   un'altra. Per quelle c'e' "Azzera studiate e ascolti" sotto la tabella. */
+(function ricomincia(){
+  const b = document.getElementById("ricomincia");
+  if(!b) return;
+  const NL = String.fromCharCode(10);
+  b.addEventListener("click", () => {
+    if(!confirm(
+      "Ricominciare le domande da zero?" + NL + NL +
+      "Si azzerano: le risposte date, gli esiti, gli esami sostenuti e i segni" + NL +
+      "« la sapevo / da rivedere » del ripasso." + NL + NL +
+      "Restano: le tue note, le correzioni che hai salvato, e tutta la teoria." + NL + NL +
+      "Non si torna indietro."
+    )) return;
+    try{
+      const raw = localStorage.getItem("az104:user");
+      if(raw){
+        const u = JSON.parse(raw);
+        u.prog = {};
+        u.history = [];
+        localStorage.setItem("az104:user", JSON.stringify(u));
+      }
+      localStorage.removeItem("az104-ripasso-v1");
+    }catch(e){ /* browser senza memoria locale: non c'e' niente da azzerare */ }
+    /* La pagina aperta puo' avere gli stessi dati gia' in memoria: senza questo,
+       il primo salvataggio dopo il click li riscriverebbe come stavano. */
+    if(typeof window.azzeraInMemoria === "function") window.azzeraInMemoria();
+    location.reload();
+  });
+})();
+</script>

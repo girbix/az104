@@ -1,0 +1,171 @@
+[
+  {
+    "id": "P21",
+    "d": 4,
+    "t": "Reti virtuali, subnet, peering e IP pubblici",
+    "min": 35,
+    "costo": "gratis",
+    "obiettivi": ["Create and configure virtual networks and subnets", "Create and configure virtual network peering", "Configure public IP addresses"],
+    "perche": "Due fatti che l'esame chiede in continuazione: Azure si tiene **5 indirizzi per subnet** (il primo e l'ultimo più tre), e il **peering non è transitivo** — se A vede B e B vede C, A non vede C. E fra gli IP pubblici, **Basic e Standard** hanno comportamenti diversi sulle zone e sul traffico in uscita.",
+    "serve": "Una sottoscrizione. VNet, subnet, peering e un IP pubblico non usato non costano niente.",
+    "passi": [
+      "Crea tre VNet con spazi che non si sovrappongono: A, B, C. Se si sovrappongono, il peering si rifiuta — è la prima cosa che l'esame fa sbagliare.",
+      "Aggiungi una seconda subnet ad A e conta gli indirizzi utilizzabili: su un /24 sono 251, non 254.",
+      "Crea il peering A↔B e B↔C. Il peering va creato **da tutte e due le parti**: una sola metà lascia lo stato `Initiated` invece di `Connected`.",
+      "Verifica che A non veda C: è la non transitività.",
+      "Crea un IP pubblico **Standard** statico e guarda la differenza con Basic: Standard è sempre statico, supporta le zone ed è quello richiesto dal Load Balancer Standard."
+    ],
+    "cli": "RG=rg-lab-net\naz group create -n $RG -l westeurope\n\naz network vnet create -g $RG -n vnet-a --address-prefix 10.0.0.0/16 \\\n  --subnet-name web --subnet-prefix 10.0.1.0/24\naz network vnet create -g $RG -n vnet-b --address-prefix 10.1.0.0/16 \\\n  --subnet-name web --subnet-prefix 10.1.1.0/24\naz network vnet create -g $RG -n vnet-c --address-prefix 10.2.0.0/16 \\\n  --subnet-name web --subnet-prefix 10.2.1.0/24\n\naz network vnet subnet create -g $RG --vnet-name vnet-a -n dati \\\n  --address-prefix 10.0.2.0/24\n\n# quanti indirizzi restano davvero\naz network vnet subnet show -g $RG --vnet-name vnet-a -n web \\\n  --query \"{prefisso:addressPrefix, liberi:availableIpAddressCount}\"\n\n# peering: due volte, uno per verso\naz network vnet peering create -g $RG -n a-b --vnet-name vnet-a \\\n  --remote-vnet vnet-b --allow-vnet-access\naz network vnet peering create -g $RG -n b-a --vnet-name vnet-b \\\n  --remote-vnet vnet-a --allow-vnet-access\n\naz network vnet peering list -g $RG --vnet-name vnet-a -o table\n\n# IP pubblico Standard\naz network public-ip create -g $RG -n ip-lab --sku Standard --allocation-method Static",
+    "verifica": "`availableIpAddressCount` su un /24 dice 251: sono i 5 indirizzi che Azure si riserva. Il peering risulta `Connected` solo dopo aver creato entrambi i versi; con uno solo resta `Initiated`, ed è il guasto che l'esame descrive.",
+    "pulizia": "Tieni questo resource group fino alla fine dei lab di rete, poi:\n\n`az group delete -n rg-lab-net --yes --no-wait`",
+    "lab": {
+      "t": "Lab 04 ufficiale: Implement Virtual Networking",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_04-Implement_Virtual_Networking.html"
+    }
+  },
+  {
+    "id": "P22",
+    "d": 4,
+    "t": "NSG, gruppi di sicurezza applicativi e regole effettive",
+    "min": 35,
+    "costo": "ore",
+    "obiettivi": ["Create and configure network security groups (NSGs) and application security groups", "Evaluate effective security rules in NSGs"],
+    "perche": "L'esame mostra una lista di regole e chiede se un pacchetto passa. Le regole da avere in testa: vince la **priorità più bassa**, ci sono regole predefinite invisibili che permettono il traffico dentro la VNet e negano tutto il resto, e se hai un NSG **sia sulla subnet sia sulla NIC** devono lasciar passare **tutti e due**.",
+    "serve": "Una VM piccola nella VNet del lab P21. Si paga a ore: dealloca a fine sessione.",
+    "passi": [
+      "Crea una VM nella subnet `web`, poi un NSG sulla subnet e uno sulla NIC.",
+      "Sul primo consenti la porta 80, sul secondo no. Prova a raggiungerla: non passa. Poi apri anche il secondo.",
+      "Guarda le **regole effettive** sulla NIC: è la schermata che l'esame ti fa leggere, con le regole tue e quelle predefinite tutte insieme.",
+      "Crea un **ASG**, associalo alla configurazione IP della NIC, e scrivi una regola che come destinazione usa l'ASG invece di un indirizzo. È il modo di scrivere regole che non invecchiano quando cambi gli IP.",
+      "Guarda le regole predefinite: `AllowVnetInBound`, `AllowAzureLoadBalancerInBound`, `DenyAllInBound`. Quella dell'load balancer è la ragione per cui un LB funziona senza che tu apra niente."
+    ],
+    "cli": "az vm create -g $RG -n vm-web --vnet-name vnet-a --subnet web \\\n  --image Ubuntu2204 --size Standard_B1s \\\n  --admin-username azureuser --generate-ssh-keys --public-ip-sku Standard\n\naz network nsg create -g $RG -n nsg-subnet\naz network nsg create -g $RG -n nsg-nic\n\naz network nsg rule create -g $RG --nsg-name nsg-subnet -n http \\\n  --priority 100 --direction Inbound --access Allow \\\n  --protocol Tcp --destination-port-ranges 80\n\naz network vnet subnet update -g $RG --vnet-name vnet-a -n web \\\n  --network-security-group nsg-subnet\n\nNIC=$(az vm show -g $RG -n vm-web --query \"networkProfile.networkInterfaces[0].id\" -o tsv)\naz network nic update --ids $NIC --network-security-group nsg-nic\n\n# le regole viste da chi decide davvero\naz network nic list-effective-nsg --ids $NIC \\\n  --query \"value[].effectiveSecurityRules[?access=='Allow'].{nome:name, porta:destinationPortRange, prio:priority}\" -o table\n\n# gruppo di sicurezza applicativo\naz network asg create -g $RG -n asg-web\naz network nic ip-config update --ids $NIC/ipConfigurations/ipconfigvm-web \\\n  --application-security-groups asg-web",
+    "verifica": "Con il solo NSG della subnet aperto sulla 80, la connessione non passa: il secondo NSG sulla NIC nega. Aperti tutti e due, passa. L'elenco delle regole effettive mostra anche `DenyAllInBound` con priorità 65500, che è la ragione per cui «non ho negato niente» non basta.",
+    "pulizia": "`az vm delete -g $RG -n vm-web --yes` — oppure lascia stare e cancella tutto il gruppo alla fine di P27. Nel frattempo: `az vm deallocate -g $RG -n vm-web`",
+    "lab": {
+      "t": "Lab 04 ufficiale: Implement Virtual Networking",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_04-Implement_Virtual_Networking.html"
+    }
+  },
+  {
+    "id": "P23",
+    "d": 4,
+    "t": "Route definite da te, e diagnosticare perché non passa",
+    "min": 30,
+    "costo": "ore",
+    "obiettivi": ["Configure user-defined routes", "Troubleshoot network connectivity"],
+    "perche": "Le UDR sono il modo per rompere una rete che funzionava, ed è per questo che l'esame le ama. Gli strumenti di diagnosi — **IP flow verify** dice quale regola NSG ha bloccato, **Next hop** dice dove sta andando il pacchetto — sono le due risposte più frequenti alla domanda «con quale strumento lo scopri».",
+    "serve": "La VM e la VNet dei lab precedenti.",
+    "passi": [
+      "Guarda le route effettive della NIC **prima** di toccare niente: ci sono già, create da Azure.",
+      "Crea una route table con una rotta `0.0.0.0/0` verso `None` e associala alla subnet: hai appena buttato via Internet.",
+      "Riguarda le route effettive: la tua ha sostituito quella di sistema. Le UDR **vincono sempre** sulle route predefinite.",
+      "Usa **Next hop** per vedere dove finisce un pacchetto diretto a un indirizzo pubblico: risponde `None`.",
+      "Usa **IP flow verify** per una porta chiusa: ti dice esattamente il nome della regola NSG che nega.",
+      "Togli l'associazione e verifica che tutto torni."
+    ],
+    "cli": "# com'era prima\naz network nic show-effective-route-table --ids $NIC -o table\n\naz network route-table create -g $RG -n rt-lab\naz network route-table route create -g $RG --route-table-name rt-lab \\\n  -n blocca-internet --address-prefix 0.0.0.0/0 --next-hop-type None\n\naz network vnet subnet update -g $RG --vnet-name vnet-a -n web --route-table rt-lab\n\n# com'e' adesso\naz network nic show-effective-route-table --ids $NIC -o table\n\n# dove va un pacchetto\naz network watcher show-next-hop -g $RG --vm vm-web \\\n  --source-ip 10.0.1.4 --dest-ip 8.8.8.8\n\n# quale regola blocca\naz network watcher test-ip-flow -g $RG --vm vm-web \\\n  --direction Inbound --protocol TCP \\\n  --local 10.0.1.4:22 --remote 1.2.3.4:12345\n\n# rimetti a posto\naz network vnet subnet update -g $RG --vnet-name vnet-a -n web --remove routeTable",
+    "verifica": "Dopo l'associazione, `show-next-hop` per 8.8.8.8 risponde `nextHopType: None`. `test-ip-flow` restituisce `Deny` insieme al **nome della regola** che ha deciso: quel campo è la risposta a metà delle domande di diagnosi.",
+    "pulizia": "L'importante è staccare la route table prima di dimenticartene, altrimenti i lab successivi non hanno rete:\n\n`az network vnet subnet update -g $RG --vnet-name vnet-a -n web --remove routeTable`\n`az network route-table delete -g $RG -n rt-lab`",
+    "lab": {
+      "t": "Lab 06 ufficiale: Implement Network Traffic Management",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_06-Implement_Network_Traffic_Management.html"
+    }
+  },
+  {
+    "id": "P24",
+    "d": 4,
+    "t": "Azure Bastion",
+    "min": 25,
+    "costo": "ore",
+    "obiettivi": ["Implement Azure Bastion"],
+    "perche": "Un solo obiettivo, ma con un vincolo che l'esame chiede alla lettera: la subnet deve chiamarsi **esattamente** `AzureBastionSubnet` ed essere almeno **/26**. Sbagliare nome o dimensione è l'errore che la domanda descrive.",
+    "serve": "La VNet del lab P21. **Attenzione al costo: Bastion si paga a ore anche se non lo usi, ed è fra le voci più care.** Fallo in una sessione sola e cancellalo subito.",
+    "passi": [
+      "Crea la subnet con il nome esatto e prefisso /26.",
+      "Crea un IP pubblico **Standard** — Basic non è accettato.",
+      "Distribuisci Bastion e collegati alla VM dal portale: si apre nel browser, senza IP pubblico sulla VM e senza aprire la 22 o la 3389 dal mondo.",
+      "Prova a creare la subnet con un nome diverso: Bastion non la accetta. È il punto della domanda.",
+      "**Cancella Bastion appena hai finito.**"
+    ],
+    "cli": "az network vnet subnet create -g $RG --vnet-name vnet-a \\\n  -n AzureBastionSubnet --address-prefix 10.0.3.0/26\n\naz network public-ip create -g $RG -n ip-bastion \\\n  --sku Standard --allocation-method Static\n\naz network bastion create -g $RG -n bastion-lab \\\n  --public-ip-address ip-bastion --vnet-name vnet-a \\\n  --location westeurope --sku Basic\n\n# collegati dal portale: VM -> Connect -> Bastion",
+    "verifica": "Dal portale la VM si apre in una scheda del browser senza che tu abbia un IP pubblico raggiungibile sulla porta 22. Se la creazione fallisce, leggi il messaggio: quasi sempre nomina la subnet o lo SKU dell'IP.",
+    "pulizia": "**Questa è la pulizia più importante di tutta la pagina.** Bastion continua a costare finché esiste:\n\n`az network bastion delete -g rg-lab-net -n bastion-lab`\n`az network public-ip delete -g rg-lab-net -n ip-bastion`\n\nVerifica con `az network bastion list -g rg-lab-net -o table` che l'elenco sia vuoto.",
+    "lab": {
+      "t": "Lab 04 ufficiale: Implement Virtual Networking",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_04-Implement_Virtual_Networking.html"
+    }
+  },
+  {
+    "id": "P25",
+    "d": 4,
+    "t": "Endpoint di servizio contro endpoint privati",
+    "min": 35,
+    "costo": "centesimi",
+    "obiettivi": ["Configure service endpoints for Azure platform as a service (PaaS)", "Configure private endpoints for Azure PaaS"],
+    "perche": "È la coppia che l'esame confonde di proposito. Il **service endpoint** lascia il traffico sulla rete Microsoft ma l'indirizzo resta pubblico; il **private endpoint** porta il servizio **dentro** la tua VNet con un IP privato, e si porta dietro una **zona DNS privata**. Se la risoluzione DNS non è a posto, il private endpoint c'è ma nessuno lo trova: è lo scenario di guasto più chiesto.",
+    "serve": "La VNet del lab P21 e un account di archiviazione.",
+    "passi": [
+      "Attiva il service endpoint `Microsoft.Storage` sulla subnet e aggiungi la subnet fra le regole di rete dell'account: adesso lo storage accetta quella subnet e rifiuta il resto.",
+      "Risolvi il nome dello storage dalla VM: risponde ancora un **indirizzo pubblico**. Il traffico ci arriva per una strada privata, ma il nome è quello di sempre.",
+      "Crea un **private endpoint** verso il blob dello stesso account, con la sua zona DNS privata.",
+      "Risolvi di nuovo il nome dalla VM: adesso risponde un **10.x**. È la differenza, e si vede solo così.",
+      "Guarda il nome della zona: `privatelink.blob.core.windows.net`. Quel `privatelink` è la parola che l'esame usa come indizio."
+    ],
+    "cli": "SA=stpe$RANDOM\naz storage account create -n $SA -g $RG -l westeurope --sku Standard_LRS\n\n# --- service endpoint\naz network vnet subnet update -g $RG --vnet-name vnet-a -n web \\\n  --service-endpoints Microsoft.Storage\n\naz storage account network-rule add -n $SA -g $RG \\\n  --vnet-name vnet-a --subnet web\naz storage account update -n $SA -g $RG --default-action Deny\n\n# --- private endpoint\naz network vnet subnet update -g $RG --vnet-name vnet-a -n dati \\\n  --disable-private-endpoint-network-policies true\n\nSAID=$(az storage account show -n $SA -g $RG --query id -o tsv)\naz network private-endpoint create -g $RG -n pe-blob \\\n  --vnet-name vnet-a --subnet dati \\\n  --private-connection-resource-id $SAID --group-id blob \\\n  --connection-name conn-blob\n\naz network private-dns zone create -g $RG -n privatelink.blob.core.windows.net\naz network private-dns link vnet create -g $RG -n link-a \\\n  --zone-name privatelink.blob.core.windows.net --virtual-network vnet-a \\\n  --registration-enabled false\n\naz network private-endpoint dns-zone-group create -g $RG \\\n  --endpoint-name pe-blob -n zg --private-dns-zone privatelink.blob.core.windows.net \\\n  --zone-name blob",
+    "verifica": "Dalla VM, `nslookup $SA.blob.core.windows.net` risponde un indirizzo pubblico prima del private endpoint e un `10.0.2.x` dopo. Se dopo continua a rispondere pubblico, manca il collegamento fra zona DNS privata e VNet: è esattamente il guasto che l'esame descrive.",
+    "pulizia": "Va tutto via con il resource group alla fine di P27. Se vuoi liberare subito:\n\n`az network private-endpoint delete -g $RG -n pe-blob`\n`az storage account delete -n $SA -g $RG --yes`",
+    "lab": {
+      "t": "Lab 05 ufficiale: Implement Intersite Connectivity",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_05-Implement_Intersite_Connectivity.html"
+    }
+  },
+  {
+    "id": "P26",
+    "d": 4,
+    "t": "Azure DNS, pubblico e privato",
+    "min": 25,
+    "costo": "centesimi",
+    "obiettivi": ["Configure Azure DNS"],
+    "perche": "L'esame chiede due cose: quali **name server** vanno comunicati al registrar per delegare un dominio, e la differenza fra zona **pubblica** e **privata**. Creare una zona costa pochi centesimi e chiarisce entrambe in venti minuti.",
+    "serve": "Una sottoscrizione. Non serve possedere un dominio: la zona si crea comunque, semplicemente nessuno la interroga da Internet finché non deleghi.",
+    "passi": [
+      "Crea una zona pubblica per un nome qualsiasi e leggi i **name server** che Azure ti assegna: sono i quattro `ns1-…` da dare al registrar. Senza quella delega, la zona esiste e non serve a niente.",
+      "Aggiungi un record A e uno CNAME e interrogali puntando direttamente ai name server di Azure con `dig` o `nslookup`.",
+      "Crea una zona **privata**, collegala alla VNet con la registrazione automatica attiva, e nota che le VM della rete ci si registrano da sole.",
+      "Confronta: la zona pubblica risponde a chiunque via Internet, quella privata solo dentro le VNet collegate."
+    ],
+    "cli": "az network dns zone create -g $RG -n lab.example\n\naz network dns zone show -g $RG -n lab.example \\\n  --query nameServers -o tsv\n\naz network dns record-set a add-record -g $RG -z lab.example \\\n  -n www -a 203.0.113.10\naz network dns record-set cname set-record -g $RG -z lab.example \\\n  -n alias -c www.lab.example\n\n# interroga direttamente Azure, senza delega\nNS=$(az network dns zone show -g $RG -n lab.example --query \"nameServers[0]\" -o tsv)\nnslookup www.lab.example $NS\n\n# zona privata, con registrazione automatica\naz network private-dns zone create -g $RG -n interno.lab\naz network private-dns link vnet create -g $RG -n link-interno \\\n  --zone-name interno.lab --virtual-network vnet-a --registration-enabled true",
+    "verifica": "`nslookup` puntato al name server di Azure risolve `www.lab.example` anche senza delega: è la prova che la zona funziona e che manca solo il passaggio dal registrar. Nella zona privata, dopo qualche minuto compare il record della VM registrato da solo.",
+    "pulizia": "`az network dns zone delete -g $RG -n lab.example --yes`\n`az network private-dns link vnet delete -g $RG -n link-interno --zone-name interno.lab --yes`\n`az network private-dns zone delete -g $RG -n interno.lab --yes`",
+    "lab": {
+      "t": "Lab 06 ufficiale: Implement Network Traffic Management",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_06-Implement_Network_Traffic_Management.html"
+    }
+  },
+  {
+    "id": "P27",
+    "d": 4,
+    "t": "Load balancer, e perché non bilancia",
+    "min": 40,
+    "costo": "ore",
+    "obiettivi": ["Configure an internal or public load balancer", "Troubleshoot load balancing"],
+    "perche": "Il load balancer ha quattro pezzi — frontend, backend pool, **health probe**, regola — e l'esame chiede sempre quale manca. Nove volte su dieci la risposta è la **probe**: se fallisce, l'istanza esce dal pool e il traffico non ci arriva più, anche se la macchina è accesa e sana.",
+    "serve": "Due VM piccole nella stessa VNet. **Si paga a ore**: due VM più un LB Standard.",
+    "passi": [
+      "Crea due VM senza IP pubblico nella subnet `web` e installa un server web su entrambe, con una pagina che dica quale è.",
+      "Crea un load balancer **Standard** pubblico con frontend, backend pool, probe sulla 80 e regola.",
+      "Chiama l'IP del load balancer più volte: le risposte si alternano fra le due macchine.",
+      "**Rompi la probe**: cambiala su una porta dove non ascolta nessuno. Dopo qualche secondo il traffico si ferma, anche se le VM sono accese.",
+      "Guarda lo stato di salute del backend pool: le istanze risultano non integre. Quello è lo schermo che l'esame ti fa interpretare.",
+      "Rimetti la probe sulla 80 e verifica che riprenda."
+    ],
+    "cli": "az network public-ip create -g $RG -n ip-lb --sku Standard --allocation-method Static\n\naz network lb create -g $RG -n lb-lab --sku Standard \\\n  --public-ip-address ip-lb \\\n  --frontend-ip-name fe --backend-pool-name be\n\naz network lb probe create -g $RG --lb-name lb-lab -n probe-http \\\n  --protocol Tcp --port 80\n\naz network lb rule create -g $RG --lb-name lb-lab -n regola-http \\\n  --protocol Tcp --frontend-port 80 --backend-port 80 \\\n  --frontend-ip-name fe --backend-pool-name be --probe-name probe-http\n\n# collega le NIC delle due VM al pool\nfor V in vm-web1 vm-web2; do\n  NICID=$(az vm show -g $RG -n $V --query \"networkProfile.networkInterfaces[0].id\" -o tsv)\n  az network nic ip-config address-pool add --ids $NICID/ipConfigurations/ipconfig$V \\\n    --lb-name lb-lab --address-pool be\ndone\n\n# rompi la probe di proposito\naz network lb probe update -g $RG --lb-name lb-lab -n probe-http --port 8080\n\n# rimetti a posto\naz network lb probe update -g $RG --lb-name lb-lab -n probe-http --port 80",
+    "verifica": "`curl` ripetuto sull'IP del load balancer alterna le due risposte. Con la probe sulla 8080 le chiamate vanno in timeout entro un minuto: le VM sono accese, il servizio risponde, e il traffico non arriva lo stesso. È la lezione del lab.",
+    "pulizia": "**Adesso si butta tutta la rete:**\n\n`az group delete -n rg-lab-net --yes --no-wait`\n\nControlla anche che Bastion sia già sparito da P24: `az network bastion list -o table`",
+    "lab": {
+      "t": "Lab 06 ufficiale: Implement Network Traffic Management",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_06-Implement_Network_Traffic_Management.html"
+    }
+  }
+]

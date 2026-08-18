@@ -1,0 +1,149 @@
+[
+  {
+    "id": "P28",
+    "d": 5,
+    "t": "Log Analytics, impostazioni di diagnostica e KQL",
+    "min": 40,
+    "costo": "centesimi",
+    "obiettivi": ["Configure log settings in Azure Monitor", "Query and analyze logs in Azure Monitor"],
+    "perche": "La regola che l'esame chiede in mille modi: i **log non arrivano da soli**. Finché non crei un'impostazione di diagnostica che li manda a un workspace, la tabella è vuota. E poi ti mostra una query KQL chiedendo cosa restituisce: `where`, `summarize`, `project`, `ago()` sono il vocabolario minimo.",
+    "serve": "Una sottoscrizione e una risorsa qualsiasi da monitorare, per esempio un account di archiviazione.",
+    "passi": [
+      "Crea un workspace Log Analytics.",
+      "Crea un'impostazione di diagnostica su una risorsa, mandando log e metriche al workspace. Nota le categorie: quali log esistono dipende dal tipo di risorsa.",
+      "Aspetta qualche minuto — l'ingestione non è istantanea, ed è un'altra cosa che l'esame chiede.",
+      "Scrivi una query KQL: filtra con `where`, raggruppa con `summarize`, scegli le colonne con `project`.",
+      "Guarda la **ritenzione** del workspace e come si cambia: è la manopola che l'esame collega al costo.",
+      "Nota la differenza fra **metriche** (numeriche, immediate, ritenzione breve) e **log** (righe, ritardate, ritenzione configurabile)."
+    ],
+    "cli": "RG=rg-lab-mon\naz group create -n $RG -l westeurope\n\naz monitor log-analytics workspace create -g $RG -n law-lab -l westeurope\nWS=$(az monitor log-analytics workspace show -g $RG -n law-lab --query id -o tsv)\n\nSA=stmon$RANDOM\naz storage account create -n $SA -g $RG -l westeurope --sku Standard_LRS\nSAID=$(az storage account show -n $SA -g $RG --query id -o tsv)\n\naz monitor diagnostic-settings create -n diag-storage \\\n  --resource \"$SAID/blobServices/default\" \\\n  --workspace $WS \\\n  --logs '[{\"category\":\"StorageRead\",\"enabled\":true}]' \\\n  --metrics '[{\"category\":\"Transaction\",\"enabled\":true}]'\n\n# ritenzione\naz monitor log-analytics workspace update -g $RG -n law-lab --retention-time 60\n\n# una query, dopo qualche minuto\naz monitor log-analytics query -w $(az monitor log-analytics workspace show \\\n    -g $RG -n law-lab --query customerId -o tsv) \\\n  --analytics-query \"AzureMetrics | where TimeGenerated > ago(1h) | summarize conteggio=count() by ResourceId | project ResourceId, conteggio\"",
+    "verifica": "La query restituisce righe solo dopo che l'impostazione di diagnostica ha avuto tempo di lavorare. Se torna vuota subito dopo averla creata **non hai sbagliato**: è il ritardo di ingestione, e sapere che esiste è la risposta a una domanda d'esame.",
+    "pulizia": "Tieni il gruppo fino alla fine di P30, poi:\n\n`az group delete -n rg-lab-mon --yes --no-wait`\n\nIl workspace ha un periodo di eliminazione temporanea: se ne ricrei uno con lo stesso nome entro 14 giorni, recupera i dati vecchi.",
+    "lab": {
+      "t": "Lab 11 ufficiale: Implement Monitoring",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_11-Implement_Monitoring.html"
+    }
+  },
+  {
+    "id": "P29",
+    "d": 5,
+    "t": "Metriche, avvisi e gruppi di azione",
+    "min": 35,
+    "costo": "gratis",
+    "obiettivi": ["Interpret metrics in Azure Monitor", "Set up alert rules, action groups, and alert processing rules in Azure Monitor"],
+    "perche": "Un avviso ha tre pezzi separati che l'esame tiene distinti: la **regola** (cosa guardare e quando scattare), il **gruppo di azione** (a chi dirlo e come), e le **regole di elaborazione** (che possono zittire tutto in una finestra di manutenzione). Le domande chiedono quale dei tre ti manca.",
+    "serve": "Il resource group del lab P28.",
+    "passi": [
+      "Crea un **gruppo di azione** con la tua email e conferma l'iscrizione dalla mail che arriva.",
+      "Crea una regola di avviso su una metrica dell'account di archiviazione, per esempio le transazioni, con una soglia bassa perché scatti davvero.",
+      "Genera un po' di traffico e aspetta: l'avviso scatta e arriva la mail.",
+      "Guarda il campo **severity** da 0 a 4 e la **frequenza di valutazione**: sono i campi che l'esame mostra chiedendo cosa cambia.",
+      "Crea una **regola di elaborazione degli avvisi** che sopprime le notifiche in una finestra: è il pezzo che risponde a «come faccio a non ricevere avvisi durante la manutenzione».",
+      "In `Metrics` prova le aggregazioni: media, massimo, somma, conteggio. La stessa metrica con aggregazioni diverse racconta cose diverse — altra domanda ricorrente."
+    ],
+    "cli": "az monitor action-group create -g $RG -n ag-lab \\\n  --short-name lab \\\n  --action email me tuo.indirizzo@example.com\n\nAG=$(az monitor action-group show -g $RG -n ag-lab --query id -o tsv)\n\naz monitor metrics alert create -g $RG -n avviso-transazioni \\\n  --scopes $SAID \\\n  --condition \"total Transactions > 10\" \\\n  --window-size 5m --evaluation-frequency 1m \\\n  --severity 3 \\\n  --action $AG \\\n  --description \"Piu' di 10 transazioni in 5 minuti\"\n\n# cosa si puo' misurare su questa risorsa\naz monitor metrics list-definitions --resource $SAID \\\n  --query \"[].{metrica:name.value, aggregazioni:supportedAggregationTypes}\" -o table\n\naz monitor metrics alert list -g $RG -o table",
+    "verifica": "`az monitor metrics alert show -g $RG -n avviso-transazioni --query criteria` mostra soglia, finestra e aggregazione. Dopo aver generato traffico, la mail arriva entro pochi minuti — se non arriva, quasi sempre non hai confermato l'iscrizione del gruppo di azione.",
+    "pulizia": "`az monitor metrics alert delete -g $RG -n avviso-transazioni`\n`az monitor action-group delete -g $RG -n ag-lab`\n\nAltrimenti continuano ad arrivarti mail per settimane.",
+    "lab": {
+      "t": "Lab 11 ufficiale: Implement Monitoring",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_11-Implement_Monitoring.html"
+    }
+  },
+  {
+    "id": "P30",
+    "d": 5,
+    "t": "Insights per macchine, storage e rete",
+    "min": 25,
+    "costo": "ore",
+    "obiettivi": ["Configure and interpret monitoring of virtual machines, storage accounts, and networks by using Azure Monitor Insights"],
+    "perche": "Gli **Insights** sono cruscotti già pronti che si appoggiano al workspace. L'esame chiede cosa serve per accenderli: per le VM serve l'**Azure Monitor Agent** e una **data collection rule**, e senza quelli il cruscotto resta vuoto. È la differenza fra «l'ho abilitato» e «vedo i dati».",
+    "serve": "Il workspace del lab P28 e una VM piccola. Si paga a ore.",
+    "passi": [
+      "Abilita **VM insights** su una macchina e guarda cosa installa: l'agente e una regola di raccolta dati.",
+      "Aspetta qualche minuto e apri il cruscotto: prestazioni, mappa delle dipendenze, processi.",
+      "Apri **Storage insights** sull'account: latenza, disponibilità, transazioni per tipo di operazione. Non richiede agente, perché i dati arrivano dalla piattaforma.",
+      "Apri **Network insights**: topologia e stato delle risorse di rete. È lo strumento che l'esame nomina per «vedere la mappa».",
+      "Nota la differenza: le risorse PaaS mandano metriche da sole, dentro una VM ci vuole un agente. Il *dentro* e il *fuori* sono la chiave di queste domande."
+    ],
+    "cli": "az vm create -g $RG -n vm-mon --image Ubuntu2204 --size Standard_B1s \\\n  --admin-username azureuser --generate-ssh-keys\n\n# l'agente che serve agli Insights\naz vm extension set -g $RG --vm-name vm-mon \\\n  --name AzureMonitorLinuxAgent \\\n  --publisher Microsoft.Azure.Monitor\n\naz vm extension list -g $RG --vm-name vm-mon \\\n  --query \"[].{nome:name, stato:provisioningState}\" -o table\n\n# poi dal portale: VM -> Monitoring -> Insights -> Enable",
+    "verifica": "L'estensione risulta `Succeeded`. Nel portale, VM insights mostra i grafici dopo qualche minuto; se resta vuoto con l'agente installato, manca la **data collection rule** che dice all'agente *cosa* raccogliere.",
+    "pulizia": "**C'è una VM accesa:**\n\n`az group delete -n rg-lab-mon --yes --no-wait`",
+    "lab": {
+      "t": "Lab 11 ufficiale: Implement Monitoring",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_11-Implement_Monitoring.html"
+    }
+  },
+  {
+    "id": "P31",
+    "d": 5,
+    "t": "Network Watcher e Connection monitor",
+    "min": 25,
+    "costo": "centesimi",
+    "obiettivi": ["Use Azure Network Watcher and Connection monitor"],
+    "perche": "Network Watcher è la cassetta degli attrezzi che l'esame cita per nome: **IP flow verify** per capire quale regola blocca, **Next hop** per sapere dove va il pacchetto, **Connection troubleshoot** per una prova singola, **Connection monitor** per tenerla sotto controllo nel tempo. La domanda è quasi sempre «quale di questi usi».",
+    "serve": "Due VM in rete, anche quelle dei lab di rete.",
+    "passi": [
+      "Verifica che Network Watcher sia abilitato nella tua region: di solito si accende da solo con la prima VNet.",
+      "Usa **Connection troubleshoot** fra due VM su una porta chiusa e leggi il risultato: dice dove si è fermato.",
+      "Apri la porta con un NSG e ripeti: adesso passa.",
+      "Crea un **Connection monitor**: la stessa prova, ma ripetuta nel tempo, con storico e avvisi. È la differenza che l'esame chiede.",
+      "Guarda i **flow log** degli NSG: registrano il traffico consentito e negato, e vanno in un account di archiviazione. Sono la risposta a «come faccio a sapere cosa è passato ieri»."
+    ],
+    "cli": "az network watcher configure -g NetworkWatcherRG -l westeurope --enabled true\n\n# prova singola fra due VM\naz network watcher test-connectivity -g $RG \\\n  --source-resource vm-web1 --dest-resource vm-web2 --dest-port 80\n\n# quale regola blocca\naz network watcher test-ip-flow -g $RG --vm vm-web1 \\\n  --direction Outbound --protocol TCP \\\n  --local 10.0.1.4:12345 --remote 10.0.1.5:80\n\n# dove va il pacchetto\naz network watcher show-next-hop -g $RG --vm vm-web1 \\\n  --source-ip 10.0.1.4 --dest-ip 10.0.1.5\n\n# tenerlo sotto controllo nel tempo: dal portale,\n# Network Watcher -> Connection monitor -> Create",
+    "verifica": "`test-connectivity` risponde con `connectionStatus: Unreachable` sulla porta chiusa e `Reachable` dopo aver aperto l'NSG, elencando i salti. `test-ip-flow` restituisce il **nome della regola** responsabile: è il campo che risolve le domande di diagnosi.",
+    "pulizia": "Network Watcher e il suo resource group `NetworkWatcherRG` non costano niente e li ricrea Azure da solo: lascia stare. Se hai attivato i flow log, cancella l'account di archiviazione che li riceve, perché quello sì cresce.",
+    "lab": {
+      "t": "Lab 06 ufficiale: Implement Network Traffic Management",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_06-Implement_Network_Traffic_Management.html"
+    }
+  },
+  {
+    "id": "P32",
+    "d": 5,
+    "t": "Backup: vault, criteri, ripristino e report",
+    "min": 45,
+    "costo": "ore",
+    "obiettivi": ["Create a Recovery Services vault", "Create an Azure Backup vault", "Create and configure a backup policy", "Perform backup and restore operations by using Azure Backup", "Configure and interpret reports and alerts for backups"],
+    "perche": "Cinque obiettivi in un lab, e una distinzione che l'esame ha aggiunto apposta: il **Recovery Services vault** è quello storico (VM, Azure Files, SQL in VM, agente MARS), il **Backup vault** è il più recente e copre altre cose (blob, dischi, PostgreSQL). Sapere quale dei due si usa per cosa è mezza domanda. L'altra metà è il ripristino: **file singolo** o **VM intera** sono due procedure diverse.",
+    "serve": "Una VM da proteggere. **Si paga**: la VM a ore e il vault per lo spazio occupato dai punti di ripristino.",
+    "passi": [
+      "Crea un Recovery Services vault e imposta la ridondanza **prima** di proteggere qualcosa: dopo il primo backup non si cambia più. Trappola classica.",
+      "Crea un criterio di backup con frequenza e ritenzione tue, invece di usare quello predefinito.",
+      "Proteggi la VM e lancia un backup **su richiesta**, senza aspettare la finestra notturna.",
+      "Fai un ripristino **a livello di file**: monta lo script sul computer e vedi comparire i dischi. Poi guarda cosa serve per il ripristino della **VM intera**, che è un'altra cosa.",
+      "Crea anche un **Backup vault** e guarda cosa ti propone di proteggere: sono tipi diversi da quelli del Recovery Services vault. Metterli a confronto è il modo più veloce per non confonderli.",
+      "In `Backup reports` e negli avvisi guarda cosa ti dice quando un job fallisce."
+    ],
+    "cli": "RG=rg-lab-bk\naz group create -n $RG -l westeurope\n\naz vm create -g $RG -n vm-bk --image Ubuntu2204 --size Standard_B1s \\\n  --admin-username azureuser --generate-ssh-keys\n\n# vault storico: VM, Azure Files, MARS\naz backup vault create -g $RG -n rsv-lab -l westeurope\n\n# la ridondanza si decide ADESSO\naz backup vault backup-properties set -g $RG -n rsv-lab \\\n  --backup-storage-redundancy LocallyRedundant\n\naz backup protection enable-for-vm -g $RG -v rsv-lab \\\n  --vm vm-bk --policy-name DefaultPolicy\n\n# backup subito, senza aspettare la finestra\naz backup protection backup-now -g $RG -v rsv-lab \\\n  --container-name vm-bk --item-name vm-bk \\\n  --retain-until 20-12-2026\n\naz backup job list -g $RG -v rsv-lab -o table\n\n# i punti di ripristino disponibili\naz backup recoverypoint list -g $RG -v rsv-lab \\\n  --container-name vm-bk --item-name vm-bk -o table",
+    "verifica": "`az backup job list` mostra il job `Backup` che passa da `InProgress` a `Completed`, e dopo compare almeno un punto di ripristino. Se il comando sulla ridondanza fallisce, hai già protetto qualcosa: è proprio il vincolo che l'esame chiede.",
+    "pulizia": "**Un vault non si cancella se contiene ancora elementi protetti.** Nell'ordine:\n\n`az backup protection disable -g rg-lab-bk -v rsv-lab --container-name vm-bk --item-name vm-bk --delete-backup-data true --yes`\n`az backup vault delete -g rg-lab-bk -n rsv-lab --yes`\n`az group delete -n rg-lab-bk --yes --no-wait`\n\nSe il delete del gruppo si blocca, è quasi sempre il vault con dentro ancora qualcosa, o il **soft delete** del vault: va disattivato prima.",
+    "lab": {
+      "t": "Lab 10 ufficiale: Implement Data Protection",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_10-Implement_Data_Protection.html"
+    }
+  },
+  {
+    "id": "P33",
+    "d": 5,
+    "t": "Site Recovery e failover in un'altra region",
+    "min": 40,
+    "costo": "ore",
+    "obiettivi": ["Configure Azure Site Recovery for Azure resources", "Perform a failover to a secondary region by using Site Recovery"],
+    "perche": "Qui l'esame chiede il vocabolario e l'ordine: **test failover** non tocca la produzione, **failover** sposta davvero, e finché non fai **commit** puoi tornare indietro. Più la coppia **RPO/RTO**, che è la ragione per cui si sceglie ASR invece del backup.",
+    "serve": "Una VM in una region. **Questo è il lab più caro della pagina**: la replica mantiene copie in una seconda region e le paghi. Se il credito è poco, fallo come lettura guidata nel portale senza abilitare la replica — vedere le schermate e i nomi dei pulsanti copre già la maggior parte delle domande.",
+    "passi": [
+      "Sulla VM apri `Disaster recovery` e guarda cosa ti chiede: region di destinazione, vault, criterio di replica.",
+      "Leggi il criterio: frequenza degli snapshot coerenti con l'app e ritenzione dei punti di ripristino. Sono i numeri che diventano l'RPO.",
+      "Se abiliti la replica, aspetta che lo stato diventi **Protected**: la sincronizzazione iniziale richiede tempo.",
+      "Lancia un **test failover** in una VNet separata: nasce una VM di prova e la produzione non si accorge di niente. Poi fai il **cleanup del test**, che è un passaggio a sé.",
+      "Guarda la differenza fra **failover** e **commit**: prima del commit puoi ancora annullare. Dopo, no.",
+      "Confronta con il backup: ASR ha RPO di minuti, il backup di ore o giorni. È la ragione per cui si sceglie l'uno o l'altro."
+    ],
+    "verifica": "Nel vault, lo stato dell'elemento replicato passa a `Protected` e compare l'RPO corrente in minuti. Dopo il test failover trovi una VM nuova nella region secondaria, con il suffisso `-test`, mentre l'originale continua a girare.",
+    "pulizia": "**Nell'ordine, e non saltarne uno:**\n\n1. Cleanup del test failover, dal vault.\n2. Disabilita la replica sulla VM (`Disaster recovery` → `Disable replication`).\n3. Cancella il vault e la VM.\n4. Controlla la region secondaria: dischi e reti creati per la replica possono restare indietro.\n\nÈ la pulizia che più facilmente lascia in giro risorse che continuano a costare.",
+    "lab": {
+      "t": "Lab 10 ufficiale: Implement Data Protection",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_10-Implement_Data_Protection.html"
+    }
+  }
+]

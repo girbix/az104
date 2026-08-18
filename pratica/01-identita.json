@@ -1,0 +1,144 @@
+[
+  {
+    "id": "P01",
+    "d": 1,
+    "t": "Utenti, gruppi e reset della password",
+    "min": 35,
+    "costo": "gratis",
+    "obiettivi": ["Create users and groups", "Manage user and group properties", "Configure self-service password reset (SSPR)"],
+    "perche": "È il primo dominio per peso, e l'esame ci gira intorno con domande su **dove** si configura una cosa: la usage location sta sulla scheda dell'utente, l'SSPR sta a livello di tenant, i gruppi dinamici vogliono una licenza. Sono dettagli che si ricordano solo dopo averli cercati una volta.",
+    "serve": "Un tenant Microsoft Entra ID. Quello che arriva con l'account gratuito basta: non serve licenza per creare utenti e gruppi Assigned.",
+    "passi": [
+      "Crea due utenti e un gruppo di sicurezza, poi mettici dentro uno dei due.",
+      "Sulla scheda di un utente compila **Usage location** e **Department**: la prima serve per assegnare licenze, la seconda per le regole dei gruppi dinamici.",
+      "Nel portale, `Microsoft Entra ID` → `Password reset` → `Properties`: abilita l'SSPR per un gruppo (non per tutti), poi in `Authentication methods` porta **Number of methods required to reset** a 2.",
+      "In `Registration` guarda l'opzione **Require users to register when signing in**: è quella che l'esame confonde con l'abilitazione dell'SSPR.",
+      "Prova a creare un gruppo **Dynamic User** con la regola `user.department -eq \"Sales\"`. Se il portale te lo blocca, è la licenza P1 che manca — ed è esattamente la risposta che l'esame vuole."
+    ],
+    "cli": "# utenti\naz ad user create --display-name \"Mario Rossi\" \\\n  --user-principal-name mario.rossi@TUOTENANT.onmicrosoft.com \\\n  --password 'Lab!Password123' --force-change-password-next-sign-in true\n\naz ad user create --display-name \"Lucia Bianchi\" \\\n  --user-principal-name lucia.bianchi@TUOTENANT.onmicrosoft.com \\\n  --password 'Lab!Password123' --force-change-password-next-sign-in true\n\n# gruppo di sicurezza e un membro\naz ad group create --display-name \"Sales\" --mail-nickname sales\n\nID=$(az ad user show --id mario.rossi@TUOTENANT.onmicrosoft.com --query id -o tsv)\naz ad group member add --group Sales --member-id $ID\n\n# controlla\naz ad group member list --group Sales --query \"[].displayName\" -o tsv",
+    "verifica": "`az ad group member list --group Sales` mostra Mario e non Lucia. Nel portale, l'utente su cui hai lasciato vuota la Usage location non ti fa assegnare licenze: il messaggio d'errore è quello che l'esame descrive a parole.",
+    "pulizia": "Niente da pagare, ma pulisci per non lasciare account attivi nel tenant:\n\n`az ad group delete --group Sales`\n`az ad user delete --id mario.rossi@TUOTENANT.onmicrosoft.com`\n`az ad user delete --id lucia.bianchi@TUOTENANT.onmicrosoft.com`",
+    "lab": {
+      "t": "Lab 01 ufficiale: Manage Microsoft Entra ID Identities",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_01-Manage_Entra_ID_Identities.html"
+    }
+  },
+  {
+    "id": "P02",
+    "d": 1,
+    "t": "Invitare un utente esterno",
+    "min": 15,
+    "costo": "gratis",
+    "obiettivi": ["Manage external users"],
+    "perche": "L'esame chiede la differenza fra **Member** e **Guest** e cosa un guest può vedere per impostazione predefinita. Farne uno e guardargli la scheda chiude la questione in dieci minuti.",
+    "serve": "Un secondo indirizzo email a cui puoi accedere, anche personale.",
+    "passi": [
+      "Invita l'indirizzo esterno come guest e accetta l'invito dall'altra casella.",
+      "Guarda la scheda del guest: **User type** è `Guest`, l'UPN è nella forma `nome_dominio.com#EXT#@tuotenant.onmicrosoft.com`. Quella forma è materiale d'esame.",
+      "In `Microsoft Entra ID` → `External Identities` → `External collaboration settings` guarda chi può invitare: è la manopola che l'esame usa negli scenari «un utente non riesce a invitare»."
+    ],
+    "cli": "az rest --method post \\\n  --url https://graph.microsoft.com/v1.0/invitations \\\n  --body '{\n    \"invitedUserEmailAddress\": \"tua.altra.email@example.com\",\n    \"inviteRedirectUrl\": \"https://portal.azure.com\",\n    \"sendInvitationMessage\": true\n  }'",
+    "verifica": "`az ad user list --filter \"userType eq 'Guest'\" --query \"[].userPrincipalName\" -o tsv` elenca il guest con il suo UPN `#EXT#`.",
+    "pulizia": "`az ad user delete --id \"tua.altra.email_example.com#EXT#@TUOTENANT.onmicrosoft.com\"`",
+    "lab": {
+      "t": "Lab 01 ufficiale: Manage Microsoft Entra ID Identities",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_01-Manage_Entra_ID_Identities.html"
+    }
+  },
+  {
+    "id": "P03",
+    "d": 1,
+    "t": "Ruoli RBAC, ambiti e chi può cosa",
+    "min": 30,
+    "costo": "gratis",
+    "obiettivi": ["Manage built-in Azure roles", "Assign roles at different scopes", "Interpret access assignments"],
+    "perche": "Metà delle domande di questo dominio sono «questa persona può fare X?», e si risolvono sapendo due cose: le assegnazioni si **ereditano** verso il basso, e per **assegnare ruoli ad altri** non basta Contributor — serve Owner o User Access Administrator. Vederlo una volta vale più di rileggerlo tre.",
+    "serve": "Una sottoscrizione e i due utenti del lab P01.",
+    "passi": [
+      "Crea due resource group, `rg-lab-a` e `rg-lab-b`.",
+      "Dai a Mario il ruolo **Reader** sulla sottoscrizione e **Contributor** solo su `rg-lab-a`.",
+      "Elenca le assegnazioni con `--all` e guarda la colonna dello scope: su `rg-lab-a` ne vede due, e vince la più permissiva. Su `rg-lab-b` ne vede una sola, ereditata.",
+      "Prova ad assegnare un ruolo **come Mario**: Contributor non può. È la trappola più frequente del dominio.",
+      "Guarda cosa contiene davvero un ruolo integrato con `az role definition list`: le sezioni `actions` e `notActions`."
+    ],
+    "cli": "az group create -n rg-lab-a -l westeurope\naz group create -n rg-lab-b -l westeurope\n\nUTENTE=mario.rossi@TUOTENANT.onmicrosoft.com\nSUB=$(az account show --query id -o tsv)\n\naz role assignment create --assignee $UTENTE --role \"Reader\" \\\n  --scope /subscriptions/$SUB\n\naz role assignment create --assignee $UTENTE --role \"Contributor\" \\\n  --resource-group rg-lab-a\n\n# tutte le assegnazioni che lo riguardano, ereditate comprese\naz role assignment list --assignee $UTENTE --all -o table\n\n# cosa contiene un ruolo integrato\naz role definition list --name \"Virtual Machine Contributor\" \\\n  --query \"[0].permissions[0].{consentiti:actions, negati:notActions}\"",
+    "verifica": "L'elenco con `--all` mostra due righe per Mario: una con scope `/subscriptions/...` e una con scope `.../resourceGroups/rg-lab-a`. Questo è l'ereditarietà, ed è la cosa che l'esame chiede di leggere in una schermata.",
+    "pulizia": "`az role assignment delete --assignee $UTENTE --scope /subscriptions/$SUB`\n`az group delete -n rg-lab-a --yes --no-wait`\n`az group delete -n rg-lab-b --yes --no-wait`",
+    "lab": {
+      "t": "Lab 02a ufficiale: Manage Subscriptions and RBAC",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_02a_Manage_Subscriptions_and_RBAC_Entra.html"
+    }
+  },
+  {
+    "id": "P04",
+    "d": 1,
+    "t": "Tag, blocchi e spostare risorse",
+    "min": 30,
+    "costo": "centesimi",
+    "obiettivi": ["Apply and manage tags on resources", "Configure resource locks", "Manage resource groups"],
+    "perche": "Tre trappole classiche in un lab solo: i tag **non si ereditano** da soli dal resource group, `ReadOnly` blocca molto più di quanto sembri, e spostare una risorsa non ne cambia la region.",
+    "serve": "Una sottoscrizione. La risorsa di prova è un account di archiviazione vuoto: costa frazioni di centesimo.",
+    "passi": [
+      "Crea `rg-lab-tag` con due tag e dentro un account di archiviazione **senza** tag.",
+      "Guarda i tag della risorsa: sono vuoti. I tag del resource group non scendono da soli — ci vuole Azure Policy, ed è il lab P05.",
+      "Metti un lock **CanNotDelete** sul resource group e prova a cancellare l'account: fallisce.",
+      "Cambia il lock in **ReadOnly** e prova a modificare l'account, per esempio il tier: fallisce anche quello. `ReadOnly` blocca anche operazioni che sembrano letture, come rigenerare le chiavi.",
+      "Togli il lock e sposta l'account in `rg-lab-tag-2`: cambia il resource group, la region resta quella di prima."
+    ],
+    "cli": "az group create -n rg-lab-tag -l westeurope --tags ambiente=lab costCenter=1234\naz group create -n rg-lab-tag-2 -l westeurope\n\nSA=stlab$RANDOM\naz storage account create -n $SA -g rg-lab-tag -l westeurope --sku Standard_LRS\n\n# i tag del gruppo non sono scesi sulla risorsa\naz storage account show -n $SA -g rg-lab-tag --query tags\n\n# blocco: prima non cancellabile, poi sola lettura\naz lock create --name no-delete --lock-type CanNotDelete -g rg-lab-tag\naz storage account delete -n $SA -g rg-lab-tag --yes   # fallisce, ed e' giusto\n\naz lock delete --name no-delete -g rg-lab-tag\n\n# sposta: cambia il gruppo, non la region\nID=$(az storage account show -n $SA -g rg-lab-tag --query id -o tsv)\naz resource move --destination-group rg-lab-tag-2 --ids $ID\naz storage account show -n $SA -g rg-lab-tag-2 --query location -o tsv",
+    "verifica": "Il comando di delete con il lock attivo esce con un errore che nomina il lock. Dopo lo spostamento, `location` è ancora `westeurope`: se un giorno l'esame ti chiede come si sposta una risorsa in un'altra region, la risposta non è `az resource move`.",
+    "pulizia": "`az group delete -n rg-lab-tag --yes --no-wait`\n`az group delete -n rg-lab-tag-2 --yes --no-wait`\n\nSe un delete fallisce, hai lasciato un lock: `az lock list -g <gruppo> -o table` e cancellalo prima.",
+    "lab": {
+      "t": "Lab 02b ufficiale: Manage Governance via Azure Policy",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_02b-Manage_Governance_via_Azure_Policy.html"
+    }
+  },
+  {
+    "id": "P05",
+    "d": 1,
+    "t": "Azure Policy: assegnare, valutare, rimediare",
+    "min": 40,
+    "costo": "centesimi",
+    "obiettivi": ["Implement and manage Azure Policy", "Configure management groups"],
+    "perche": "Questo lab è la risposta a una domanda che nella banca c'è davvero: come si fa a far ereditare un tag a **risorse già esistenti**. La catena è policy con effetto **Modify** → serve una **managed identity** con permessi di scrittura → le risorse vecchie si sistemano solo con una **remediation task**. Ogni anello è un distrattore d'esame.",
+    "serve": "Una sottoscrizione e i resource group del lab P04.",
+    "passi": [
+      "Trova la definizione integrata **Inherit a tag from the resource group** e leggi qual è il suo effetto.",
+      "Assegnala sul resource group, passando `CostCenter` come nome del tag, con identità gestita di sistema e ruolo Contributor: senza identità la policy non può scrivere.",
+      "Crea una risorsa nuova e verifica che il tag arrivi da solo.",
+      "Guarda una risorsa creata **prima** dell'assegnazione: il tag non c'è. La policy non torna indietro nel tempo.",
+      "Lancia una **remediation task** e ricontrolla.",
+      "Per i management group: creane uno, mettici dentro la sottoscrizione, e nota che una policy assegnata lì vale per tutte le sottoscrizioni sotto."
+    ],
+    "cli": "RG=rg-lab-pol\naz group create -n $RG -l westeurope --tags CostCenter=1234\n\n# risorsa creata PRIMA della policy: restera' senza tag\naz storage account create -n stprima$RANDOM -g $RG -l westeurope --sku Standard_LRS\n\nDEF=$(az policy definition list \\\n  --query \"[?displayName=='Inherit a tag from the resource group'].name\" -o tsv)\n\naz policy assignment create --name eredita-costcenter \\\n  --scope $(az group show -n $RG --query id -o tsv) \\\n  --policy $DEF --params '{\"tagName\":{\"value\":\"CostCenter\"}}' \\\n  --mi-system-assigned --location westeurope --role Contributor\n\n# risorsa creata DOPO: il tag arriva da solo\naz storage account create -n stdopo$RANDOM -g $RG -l westeurope --sku Standard_LRS\n\n# le vecchie si sistemano solo cosi'\naz policy remediation create --name rimedia-costcenter \\\n  --policy-assignment eredita-costcenter --resource-group $RG",
+    "verifica": "L'account creato dopo l'assegnazione ha `CostCenter=1234` senza che tu l'abbia scritto. Quello creato prima ce l'ha solo dopo la remediation. Se la remediation fallisce con un errore di permessi, hai dimenticato `--mi-system-assigned --role Contributor`.",
+    "pulizia": "`az policy assignment delete --name eredita-costcenter --scope $(az group show -n rg-lab-pol --query id -o tsv)`\n`az group delete -n rg-lab-pol --yes --no-wait`\n\nSe hai creato il management group: `az account management-group delete --name mg-lab` (prima togli la sottoscrizione, altrimenti si rifiuta).",
+    "lab": {
+      "t": "Lab 02b ufficiale: Manage Governance via Azure Policy",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_02b-Manage_Governance_via_Azure_Policy.html"
+    }
+  },
+  {
+    "id": "P06",
+    "d": 1,
+    "t": "Budget, avvisi di costo e Advisor",
+    "min": 20,
+    "costo": "gratis",
+    "obiettivi": ["Manage costs by using alerts, budgets, and Azure Advisor recommendations", "Manage subscriptions", "Manage licenses in Microsoft Entra ID"],
+    "perche": "L'esame chiede la differenza fra un **budget** (che avvisa e basta, non spegne niente) e un **cost alert**, e dove vivono. In più è la cosa che ti salva il credito nei mesi in cui fai i lab.",
+    "serve": "Una sottoscrizione. Si fa dal portale: Cost Management non ha una CLI comoda.",
+    "passi": [
+      "Portale → `Subscriptions` → la tua → `Cost Management` → `Budgets` → `Add`. Metti un budget mensile basso, per esempio 20 €.",
+      "Nella pagina delle condizioni imposta due soglie, 50% e 90%, con la tua email. Nota che il budget **non blocca niente**: quando lo superi, ti arriva una mail e le risorse continuano a girare. È esattamente la domanda d'esame.",
+      "Vai in `Advisor` e leggi le raccomandazioni di **Cost**: ti dice quali risorse stanno lì a non fare niente.",
+      "Guarda `Cost analysis` raggruppato per **Resource group**: è il modo in cui ti accorgi che il lab di ieri è ancora acceso.",
+      "Passa un momento da `Microsoft Entra ID` → `Licenses` per vedere dove si assegnano: senza usage location sull'utente, l'assegnazione fallisce."
+    ],
+    "verifica": "Nella lista dei budget compare il tuo con la percentuale di consumo attuale. Se hai fatto i lab precedenti e pulito bene, è vicina a zero.",
+    "pulizia": "Il budget lascialo: costa zero ed è la tua rete di sicurezza per i prossimi mesi. Se proprio vuoi toglierlo, dalla stessa pagina `Budgets` → `Delete`.",
+    "lab": {
+      "t": "Lab 02a ufficiale: Manage Subscriptions and RBAC",
+      "u": "https://microsoftlearning.github.io/AZ-104-MicrosoftAzureAdministrator/Instructions/Labs/LAB_02a_Manage_Subscriptions_and_RBAC_Entra.html"
+    }
+  }
+]
