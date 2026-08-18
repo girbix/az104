@@ -51,7 +51,7 @@ button,input,select{font:inherit;color:inherit}
 a{color:var(--accent-2)}
 
 /* ---------- barra ---------- */
-.top{position:sticky;top:0;z-index:40;background:var(--card);border-bottom:1px solid var(--line);
+.top{position:sticky;top:38px;z-index:40;background:var(--card);border-bottom:1px solid var(--line);
   display:flex;align-items:center;gap:14px;padding:0 16px;height:54px}
 .brand{display:flex;align-items:baseline;gap:8px;font-family:var(--font-dis);font-weight:600;
   font-size:15px;white-space:nowrap}
@@ -67,7 +67,7 @@ a{color:var(--accent-2)}
 /* ---------- impianto ---------- */
 .wrap{display:grid;grid-template-columns:250px minmax(0,1fr);gap:26px;
   max-width:1180px;margin:0 auto;padding:20px 16px 70px;align-items:start}
-.rail{position:sticky;top:70px;max-height:calc(100vh - 92px);overflow-y:auto}
+.rail{position:sticky;top:108px;max-height:calc(100vh - 130px);overflow-y:auto}
 .dom-h{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);
   font-weight:600;margin:14px 0 5px;padding:0 4px}
 .dom-h:first-child{margin-top:0}
@@ -83,7 +83,7 @@ a{color:var(--accent-2)}
 .intro h1{font-size:21px;margin-bottom:7px}
 .intro p{margin:0;color:var(--text-2);font-size:14px;max-width:66ch}
 .lez{background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:16px;
-  box-shadow:var(--shadow);overflow:hidden;scroll-margin-top:66px}
+  box-shadow:var(--shadow);overflow:hidden;scroll-margin-top:104px}
 .lez-h{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:12px 20px;
   border-bottom:1px solid var(--line-2);background:var(--card-2)}
 .lez-h h2{font-size:16.5px;flex:1;min-width:0}
@@ -158,8 +158,33 @@ a{color:var(--accent-2)}
 .link{background:none;border:0;padding:0;font:inherit;color:var(--accent);cursor:pointer;
   text-decoration:underline}
 @media (max-width:560px){.prog .barra{display:none}}
+/* ---------- barra di sito ----------
+   Uguale su tutte e quattro le pagine: da qualunque punto si torna alla home o
+   si passa a un'altra sezione. Sta sopra l'header della pagina, che infatti si
+   incolla a 38px e non a zero.
+   I nomi delle variabili sono doppi perche' le pagine hanno due sistemi di
+   token: --card/--text (teoria e simulatore) e --surface/--ink (home e
+   ripasso). Il primo che esiste vince; nessuna pagina li ha tutti e due. */
+.sitenav{position:sticky;top:0;z-index:60;height:38px;display:flex;align-items:center;gap:2px;
+  padding:0 12px;background:var(--card,var(--surface));border-bottom:1px solid var(--line);
+  font:500 13px/1 var(--font-ui,var(--sans,system-ui));overflow-x:auto;scrollbar-width:none}
+.sitenav::-webkit-scrollbar{display:none}
+.sitenav a,.sitenav button{flex:none;padding:6px 10px;border:0;border-radius:6px;background:none;
+  color:var(--text-2,var(--ink-2));text-decoration:none;cursor:pointer;font:inherit;
+  white-space:nowrap}
+.sitenav a:hover,.sitenav button:hover{background:var(--accent-soft);color:var(--accent)}
+.sitenav a[aria-current="page"]{color:var(--text,var(--ink));font-weight:600;
+  background:var(--accent-soft)}
+.sitenav .ric{margin-left:auto;color:var(--signal,var(--warn))}
 </style>
 
+<nav class="sitenav" aria-label="Sezioni del sito">
+  <a href="index.html">Home</a>
+  <a href="studia.html" aria-current="page">Teoria</a>
+  <a href="ripasso.html">Ripasso</a>
+  <a href="simulatore.html">Simulatore</a>
+  <button class="ric" type="button" id="ricomincia" title="Riporta le domande a come erano il primo giorno">↺ Ricomincia le domande</button>
+</nav>
 <header class="top">
   <div class="brand">Studia <span>AZ-104</span></div>
   <div class="top-right">
@@ -611,5 +636,38 @@ disegna();
   card.scrollIntoView({ block:"start" });
   card.classList.add("puntata");
   setTimeout(() => card.classList.remove("puntata"), 2600);
+})();
+
+/* Ricomincia: le domande tornano tutte come non viste. Il pulsante sta nella
+   barra di sito, quindi si trova da qualunque pagina.
+   Non tocca la teoria: rifare le domande e' una cosa, dimenticare le lezioni
+   un'altra. Per quelle c'e' "Azzera studiate e ascolti" sotto la tabella. */
+(function ricomincia(){
+  const b = document.getElementById("ricomincia");
+  if(!b) return;
+  const NL = String.fromCharCode(10);
+  b.addEventListener("click", () => {
+    if(!confirm(
+      "Ricominciare le domande da zero?" + NL + NL +
+      "Si azzerano: le risposte date, gli esiti, gli esami sostenuti e i segni" + NL +
+      "« la sapevo / da rivedere » del ripasso." + NL + NL +
+      "Restano: le tue note, le correzioni che hai salvato, e tutta la teoria." + NL + NL +
+      "Non si torna indietro."
+    )) return;
+    try{
+      const raw = localStorage.getItem("az104:user");
+      if(raw){
+        const u = JSON.parse(raw);
+        u.prog = {};
+        u.history = [];
+        localStorage.setItem("az104:user", JSON.stringify(u));
+      }
+      localStorage.removeItem("az104-ripasso-v1");
+    }catch(e){ /* browser senza memoria locale: non c'e' niente da azzerare */ }
+    /* La pagina aperta puo' avere gli stessi dati gia' in memoria: senza questo,
+       il primo salvataggio dopo il click li riscriverebbe come stavano. */
+    if(typeof window.azzeraInMemoria === "function") window.azzeraInMemoria();
+    location.reload();
+  });
 })();
 </script>

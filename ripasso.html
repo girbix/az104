@@ -115,7 +115,7 @@
 
   .top {
     position: sticky;
-    top: 0;
+    top: 38px;
     z-index: 20;
     background: color-mix(in srgb, var(--surface) 92%, transparent);
     -webkit-backdrop-filter: blur(12px);
@@ -643,8 +643,33 @@
     :root { --step-0: 1rem; --step-1: 1.15rem; }
     main { padding-bottom: 110px; }
   }
+/* ---------- barra di sito ----------
+   Uguale su tutte e quattro le pagine: da qualunque punto si torna alla home o
+   si passa a un'altra sezione. Sta sopra l'header della pagina, che infatti si
+   incolla a 38px e non a zero.
+   I nomi delle variabili sono doppi perche' le pagine hanno due sistemi di
+   token: --card/--text (teoria e simulatore) e --surface/--ink (home e
+   ripasso). Il primo che esiste vince; nessuna pagina li ha tutti e due. */
+.sitenav{position:sticky;top:0;z-index:60;height:38px;display:flex;align-items:center;gap:2px;
+  padding:0 12px;background:var(--card,var(--surface));border-bottom:1px solid var(--line);
+  font:500 13px/1 var(--font-ui,var(--sans,system-ui));overflow-x:auto;scrollbar-width:none}
+.sitenav::-webkit-scrollbar{display:none}
+.sitenav a,.sitenav button{flex:none;padding:6px 10px;border:0;border-radius:6px;background:none;
+  color:var(--text-2,var(--ink-2));text-decoration:none;cursor:pointer;font:inherit;
+  white-space:nowrap}
+.sitenav a:hover,.sitenav button:hover{background:var(--accent-soft);color:var(--accent)}
+.sitenav a[aria-current="page"]{color:var(--text,var(--ink));font-weight:600;
+  background:var(--accent-soft)}
+.sitenav .ric{margin-left:auto;color:var(--signal,var(--warn))}
 </style>
 
+<nav class="sitenav" aria-label="Sezioni del sito">
+  <a href="index.html">Home</a>
+  <a href="studia.html">Teoria</a>
+  <a href="ripasso.html" aria-current="page">Ripasso</a>
+  <a href="simulatore.html">Simulatore</a>
+  <button class="ric" type="button" id="ricomincia" title="Riporta le domande a come erano il primo giorno">↺ Ricomincia le domande</button>
+</nav>
 <header class="top">
   <div class="top-row">
     <span class="brand">AZ-104</span>
@@ -1079,4 +1104,41 @@
       "<strong>I progressi non vengono salvati.</strong> Questo browser blocca la memoria locale: " +
       "i segni valgono solo finché la pagina resta aperta. Usa <em>Esporta segni</em> prima di chiuderla.";
   }
+
+/* Il pulsante Ricomincia della barra svuota la memoria locale, ma i segni
+   restano in pagina: il primo click su "la sapevo" li riscriverebbe tutti. */
+window.azzeraInMemoria = () => { Object.keys(segni).forEach(k => delete segni[k]); };
+
+/* Ricomincia: le domande tornano tutte come non viste. Il pulsante sta nella
+   barra di sito, quindi si trova da qualunque pagina.
+   Non tocca la teoria: rifare le domande e' una cosa, dimenticare le lezioni
+   un'altra. Per quelle c'e' "Azzera studiate e ascolti" sotto la tabella. */
+(function ricomincia(){
+  const b = document.getElementById("ricomincia");
+  if(!b) return;
+  const NL = String.fromCharCode(10);
+  b.addEventListener("click", () => {
+    if(!confirm(
+      "Ricominciare le domande da zero?" + NL + NL +
+      "Si azzerano: le risposte date, gli esiti, gli esami sostenuti e i segni" + NL +
+      "« la sapevo / da rivedere » del ripasso." + NL + NL +
+      "Restano: le tue note, le correzioni che hai salvato, e tutta la teoria." + NL + NL +
+      "Non si torna indietro."
+    )) return;
+    try{
+      const raw = localStorage.getItem("az104:user");
+      if(raw){
+        const u = JSON.parse(raw);
+        u.prog = {};
+        u.history = [];
+        localStorage.setItem("az104:user", JSON.stringify(u));
+      }
+      localStorage.removeItem("az104-ripasso-v1");
+    }catch(e){ /* browser senza memoria locale: non c'e' niente da azzerare */ }
+    /* La pagina aperta puo' avere gli stessi dati gia' in memoria: senza questo,
+       il primo salvataggio dopo il click li riscriverebbe come stavano. */
+    if(typeof window.azzeraInMemoria === "function") window.azzeraInMemoria();
+    location.reload();
+  });
+})();
 </script>

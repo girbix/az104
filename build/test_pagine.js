@@ -135,9 +135,11 @@ console.log("\nnumeri dichiarati sulla homepage");
             : ko(`la homepage non dice ${valore} ${cosa}: il numero e' cambiato e il testo no`);
   }
 
-  /* numeri sulla homepage che non corrispondono a niente di reale */
+  /* Numeri scritti in pagina che non corrispondono a niente di reale.
+     Solo il testo visibile: nel codice i numeri sono codici e soglie, non
+     promesse fatte a chi legge. */
   const noti = new Set(atteso.map(([v]) => String(v)).concat(["104", "1000", "700", "82", "17", "2026"]));
-  const corpo = idx.slice(idx.indexOf("</style>"));
+  const corpo = idx.slice(idx.indexOf("</style>"), idx.indexOf("<script>"));
   const sospetti = [...new Set([...corpo.matchAll(/(?<![\w.-])(\d{2,4})(?![\w.-])/g)].map((m) => m[1]))]
     .filter((n) => !noti.has(n));
   sospetti.length === 0
