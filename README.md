@@ -1,7 +1,8 @@
 # AZ-104 — teoria, banca domande e simulatore
 
 Materiale di studio per l'esame **AZ-104 (Microsoft Azure Administrator)**, allineato alle
-*skills measured* del **17 aprile 2026**. Funziona dal browser, da telefono e da PC.
+*competenze misurate* (**skills measured**) del **17 aprile 2026**. Si apre nel browser,
+senza installare niente.
 
 ### 👉 [Apri il sito](https://girbix.github.io/az104/)
 
@@ -31,8 +32,8 @@ riferimento prima di darla per buona**. Nel ripasso le non verificate hanno il b
 
 ### Dal browser
 
-Apri il [sito](https://girbix.github.io/az104/) e vai. Dal telefono, menu del browser → *Aggiungi a schermata Home*:
-si apre come un'app. I progressi restano nel browser, in locale — nessun account, nessun server.
+Apri il [sito](https://girbix.github.io/az104/) e vai. I progressi restano nel browser, in
+locale — nessun account, nessun server.
 
 - **Studia** — la teoria in italiano, una lezione per ognuno degli 82 obiettivi della study
   guide. Tre blocchi sempre uguali: **concetto**, **esempio**, **all'esame**. Da leggere prima
