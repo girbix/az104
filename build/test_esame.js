@@ -112,6 +112,69 @@ for (const d of DOMAINS) {
   ? ok("il risultato elenca l'esito per dominio")
   : ko("manca l'esito per dominio");
 
+/* ---- 4. errori e domande in bianco sono due segnali diversi ----
+   Chi si ferma a meta' prova lascia decine di domande in bianco. Se contano
+   come errori, il pannello "categorie da ripassare" gli dice di riaprire trenta
+   lezioni su cui non ha nemmeno letto la domanda — e il primo effetto e' che
+   smette di fidarsi del pannello.
+   Lo scenario provato qui e' reale: 50 domande, abbandono alla diciottesima. */
+console.log("\nCategorie da ripassare:");
+{
+  const m = html.match(/function categorieDaRipassare\(results\)\{[\s\S]*?\n\}/);
+  if (!m) {
+    ko("categorieDaRipassare() non trovata nella pagina");
+  } else {
+    const ctx = { console };
+    vm.createContext(ctx);
+    vm.runInContext(m[0], ctx);
+    const calcola = ctx.categorieDaRipassare;
+
+    /* 6 giuste e 12 sbagliate fra le prime 18, le altre 32 mai aperte */
+    const risultati = [];
+    const dove = (i) => (i < 18 ? "Risposte " + (i % 4) : "Mai viste " + (i % 9));
+    for (let i = 0; i < 50; i++) {
+      risultati.push(i < 18
+        ? { sub: dove(i), dominio: "Compute", ok: i % 3 === 0, blank: false }
+        : { sub: dove(i), dominio: "Compute", ok: false, blank: true });
+    }
+
+    const cat = calcola(risultati);
+    const conta = (f) => cat.reduce((t, [, s]) => t + f(s), 0);
+
+    conta((s) => s.ko) === 12
+      ? ok("conta 12 sbagliate, quelle a cui hai davvero risposto")
+      : ko(`conta ${conta((s) => s.ko)} sbagliate invece di 12`);
+    conta((s) => s.blank) === 32
+      ? ok("conta 32 in bianco, tenute separate")
+      : ko(`conta ${conta((s) => s.blank)} in bianco invece di 32`);
+
+    /* la cosa che conta: chi ha sbagliato viene prima di chi non c'e' arrivato */
+    const primoVuoto = cat.findIndex(([, s]) => s.ko === 0);
+    const ultimoErrore = cat.map(([, s]) => s.ko > 0).lastIndexOf(true);
+    primoVuoto === -1 || ultimoErrore < primoVuoto
+      ? ok("le categorie sbagliate stanno sopra quelle lasciate in bianco")
+      : ko("una categoria mai aperta compare sopra una che hai sbagliato davvero");
+
+    const soloBianche = cat.filter(([, s]) => s.ko === 0 && s.blank > 0);
+    soloBianche.length > 0
+      ? ok(`${soloBianche.length} categorie compaiono come "non ci sei arrivato"`)
+      : ko("le categorie mai aperte spariscono: nessun segnale su cosa manca");
+
+    /* nessuna categoria pulita deve finire nell'elenco */
+    cat.every(([, s]) => s.ko > 0 || s.blank > 0)
+      ? ok("nessuna categoria senza errori nell'elenco")
+      : ko("nell'elenco c'e' una categoria in cui non hai sbagliato niente");
+
+    /* e la pagina deve saperlo dire, non solo calcolarlo */
+    /non ci sei arrivato/.test(html)
+      ? ok("la pagina distingue a parole «non ci sei arrivato» da «tutte sbagliate»")
+      : ko("la pagina chiama ancora «tutte sbagliate» anche le domande mai aperte");
+    /a cui hai risposto/.test(html)
+      ? ok("il riepilogo mostra anche la percentuale sulle domande date")
+      : ko("il riepilogo mostra solo la percentuale grezza sulle 50");
+  }
+}
+
 const sotto = new Set(banca.map(q => q.sotto_argomento).filter(Boolean));
 info(`${sotto.size} sotto-argomenti distinti in banca`);
 

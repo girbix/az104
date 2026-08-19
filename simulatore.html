@@ -284,6 +284,7 @@ td.num{font-family:var(--font-mono);text-align:right;font-variant-numeric:tabula
 .pill.ok{background:var(--good-soft);color:var(--good)}
 .pill.no{background:var(--bad-soft);color:var(--bad)}
 .pill.mid{background:var(--signal-soft);color:var(--signal)}
+.pill.vuoto{background:var(--card-2);color:var(--text-3)}
 
 .empty{text-align:center;padding:52px 20px;color:var(--text-3)}
 .empty h3{font-size:16px;color:var(--text-2);margin-bottom:6px}
@@ -601,6 +602,27 @@ function shuffle(a){
   return r;
 }
 function pct(n, d){ return d ? Math.round(n / d * 100) : 0; }
+
+/* Le categorie su cui tornare, dalla piu' critica.
+
+   Sbagliata e senza risposta finivano nello stesso mucchio: chi si ferma a
+   meta' prova si ritrovava trenta categorie marcate "tutte sbagliate" su cui
+   non aveva nemmeno letto la domanda. Sono due segnali diversi — una dice che
+   non sai, l'altra che non ci sei arrivato — e in cima vanno le prime, perche'
+   e' li' che c'e' qualcosa da ripassare. */
+function categorieDaRipassare(results){
+  const perSub = {};
+  results.forEach(r => {
+    const k = r.sub || "—";
+    const s = (perSub[k] = perSub[k] || { n:0, ko:0, blank:0, dom:r.dominio });
+    s.n++;
+    if(r.blank) s.blank++;
+    else if(!r.ok) s.ko++;
+  });
+  return Object.entries(perSub)
+    .filter(([, s]) => s.ko > 0 || s.blank > 0)
+    .sort((a, b) => (b[1].ko - a[1].ko) || (b[1].blank - a[1].blank) || (a[1].n - b[1].n));
+}
 
 function save(){ store.set(K_USER, U).then(ok => { if(!ok) showWarn(); }); }
 function showWarn(){
@@ -1369,6 +1391,20 @@ function renderExamResult(){
     (EX.timeout ? " · tempo scaduto" : "");
   sc.appendChild(sub);
 
+  /* Con molte domande lasciate in bianco la percentuale grezza dice quanto hai
+     completato, non quanto sai. Il punteggio resta quello dell'esame vero: le
+     bianche contano errate. Ma chi legge ha diritto anche all'altro numero. */
+  if(nulle){
+    const date = EX.qs.length - nulle;
+    const q = el("p");
+    q.style.cssText = "margin:6px 0 0;font-size:12.5px;color:var(--text-3);line-height:1.5";
+    q.textContent = date
+      ? "Sulle " + date + " a cui hai risposto: " + ok + " giuste, " + pct(ok, date) + "%. " +
+        "Il punteggio conta le altre come errate, come fa l'esame vero."
+      : "Nessuna domanda risposta: il punteggio non dice niente sul tuo livello.";
+    sc.appendChild(q);
+  }
+
   const scale = el("div", "scale");
   const fill_ = el("i", pass ? "pass" : "fail");
   fill_.style.width = Math.max(2, EX.score / 10) + "%";
@@ -1416,39 +1452,41 @@ function renderExamResult(){
      Il dominio dice "vai male in rete"; il sotto-argomento dice su cosa. E'
      quello che serve per decidere cosa riaprire stasera, quindi sta qui e non
      solo nelle statistiche cumulative. */
-  const perSub = {};
-  EX.results.forEach(r => {
-    const k = r.sub || "—";
-    const s = (perSub[k] = perSub[k] || { n:0, ko:0, dom:r.dominio });
-    s.n++; if(!r.ok) s.ko++;
-  });
-  const daRipassare = Object.entries(perSub).filter(([, s]) => s.ko > 0)
-    .sort((a, b) => (b[1].ko - a[1].ko) || (a[1].n - b[1].n));
+  const daRipassare = categorieDaRipassare(EX.results);
 
   const rp = el("div", "panel");
   rp.appendChild(el("h3", null, "Categorie da ripassare"));
   if(daRipassare.length){
     const cap = el("p");
     cap.style.cssText = "font-size:12px;color:var(--text-3);margin:-3px 0 10px;line-height:1.5";
+    const bianche = daRipassare.reduce((t, [, s]) => t + s.blank, 0);
     cap.textContent = "I sotto-argomenti in cui hai sbagliato in questa prova, dai più critici in giù. " +
-      "Ogni voce porta alla sua lezione nella teoria.";
+      "Ogni voce porta alla sua lezione nella teoria." +
+      (bianche ? " Le domande lasciate in bianco sono contate a parte: dicono dove non sei " +
+                 "arrivato, non dove hai sbagliato." : "");
     rp.appendChild(cap);
     const tw2 = el("div", "tblwrap");
     const t2 = el("table");
-    t2.innerHTML = "<thead><tr><th>Sotto-argomento</th><th style='text-align:right'>Errori</th>" +
+    t2.innerHTML = "<thead><tr><th>Sotto-argomento</th><th style='text-align:right'>Sbagliate</th>" +
+      "<th style='text-align:right'>In bianco</th>" +
       "<th style='text-align:right'>Uscite</th><th></th></tr></thead>";
     const tb2 = el("tbody");
     daRipassare.forEach(([k, s]) => {
-      const p = pct(s.n - s.ko, s.n);
-      const cls = p >= 50 ? "mid" : "no";
-      const lbl = s.ko === s.n ? "tutte sbagliate" : p + "% corrette";
+      const risposte = s.n - s.blank;
+      const p = pct(risposte - s.ko, risposte);
+      /* Chi non ci e' arrivato non ha sbagliato: il colore lo deve dire. */
+      const cls = !risposte ? "vuoto" : p >= 50 ? "mid" : "no";
+      const lbl = !risposte ? "non ci sei arrivato"
+                : s.ko === risposte ? "tutte sbagliate"
+                : p + "% corrette";
       const tr = el("tr");
       /* La categoria porta alla sua lezione: e' il senso di avere teoria e
          simulatore agganciati agli stessi obiettivi. */
       const href = "studia.html?o=" + encodeURIComponent(k);
       tr.innerHTML = "<td><a href='" + esc(href) + "'>" + esc(subIT(k)) +
         "</a><div style='font-size:11px;color:var(--text-3)'>" +
-        esc(DOM_IT[s.dom] || s.dom) + "</div></td><td class='num'><b>" + s.ko + "</b></td>" +
+        esc(DOM_IT[s.dom] || s.dom) + "</div></td><td class='num'><b>" + (s.ko || "—") + "</b></td>" +
+        "<td class='num'>" + (s.blank || "—") + "</td>" +
         "<td class='num'>" + s.n + "</td><td><span class='pill " + cls + "'>" + esc(lbl) + "</span></td>";
       tb2.appendChild(tr);
     });
